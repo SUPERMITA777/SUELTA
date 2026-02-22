@@ -194,9 +194,9 @@ export function SwipeStack({ garments, onLike, onPass }: SwipeStackProps) {
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col items-center">
       {/* Cards stack area */}
-      <div className="relative flex-1 mx-4 my-2">
+      <div className="relative flex-1 w-full max-w-[420px] mx-auto my-2 px-4">
         <AnimatePresence>
           {nextGarment && (
             <SwipeCard

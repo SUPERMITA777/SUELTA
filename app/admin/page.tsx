@@ -21,6 +21,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog"
+import { ImageCropper } from "@/components/image-cropper"
 import {
   Plus,
   Loader2,
@@ -85,6 +86,8 @@ export default function AdminDashboard() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [statsOpen, setStatsOpen] = useState(false)
   const [whatsappNumber, setWhatsappNumber] = useState("")
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null)
+  const [originalFileName, setOriginalFileName] = useState("")
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Fetch settings
@@ -101,20 +104,37 @@ export default function AdminDashboard() {
     router.refresh()
   }
 
-  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      setImageToCrop(reader.result as string)
+      setOriginalFileName(file.name)
+    }
+    reader.readAsDataURL(file)
+
+    // Reset input so the same file can be selected again
+    e.target.value = ""
+  }, [])
+
+  const handleCroppedImage = async (croppedBlob: Blob) => {
+    setImageToCrop(null)
     setUploading(true)
     try {
+      const file = new File([croppedBlob], originalFileName, { type: "image/jpeg" })
       const formData = new FormData()
       formData.append("file", file)
-      console.log('Uploading file:', file.name, 'size:', file.size, 'type:', file.type)
+
+      console.log('Uploading cropped file:', file.name, 'size:', file.size)
       const res = await fetch("/api/upload", { method: "POST", body: formData })
       const data = await res.json()
+
       if (data.url) {
         console.log('Upload successful:', data.url)
         setForm((prev) => ({ ...prev, image_url: data.url }))
-        toast.success("Imagen subida")
+        toast.success("Imagen recortada y subida")
       } else {
         toast.error("Error al subir imagen")
       }
@@ -123,7 +143,7 @@ export default function AdminDashboard() {
     } finally {
       setUploading(false)
     }
-  }, [])
+  }
 
   const addTag = useCallback((tag: string) => {
     const trimmed = tag.trim()
@@ -279,6 +299,16 @@ export default function AdminDashboard() {
         </div>
       </header>
 
+      {/* Image Cropper Component */}
+      {imageToCrop && (
+        <ImageCropper
+          image={imageToCrop}
+          open={!!imageToCrop}
+          onCropComplete={handleCroppedImage}
+          onCancel={() => setImageToCrop(null)}
+        />
+      )}
+
       {/* Settings Dialog */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
         <DialogContent className="bg-card">
@@ -402,22 +432,28 @@ export default function AdminDashboard() {
                     className="flex h-48 w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-muted/50 text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted"
                   >
                     {uploading ? (
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      <>
+                        <Loader2 className="h-8 w-8 animate-spin text-primary/60" />
+                        <span className="text-sm">Subiendo...</span>
+                      </>
                     ) : (
                       <>
-                        <Upload className="h-8 w-8" />
-                        <span className="text-sm">Subir imagen</span>
+                        <Upload className="h-8 w-8 text-muted-foreground/60" />
+                        <div className="flex flex-col items-center">
+                          <span className="text-sm font-medium text-foreground/80">Subir foto</span>
+                          <span className="text-[10px] text-muted-foreground">Puedes recortar y hacer zoom</span>
+                        </div>
                       </>
                     )}
+                    <input
+                      type="file"
+                      ref={fileRef}
+                      onChange={handleImageSelect}
+                      accept="image/*"
+                      className="hidden"
+                    />
                   </button>
                 )}
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageUpload}
-                />
               </div>
 
               {/* Title */}
