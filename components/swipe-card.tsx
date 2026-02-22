@@ -1,0 +1,237 @@
+"use client"
+
+import { useState, useCallback } from "react"
+import {
+  motion,
+  useMotionValue,
+  useTransform,
+  type PanInfo,
+  AnimatePresence,
+} from "framer-motion"
+import { Heart, X, Tag, Ruler, Sparkles } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import type { Garment } from "@/lib/types"
+
+interface SwipeCardProps {
+  garment: Garment
+  onSwipeLeft: () => void
+  onSwipeRight: () => void
+  isTop: boolean
+}
+
+export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop }: SwipeCardProps) {
+  const x = useMotionValue(0)
+  const rotate = useTransform(x, [-300, 0, 300], [-18, 0, 18])
+  const likeOpacity = useTransform(x, [0, 100], [0, 1])
+  const nopeOpacity = useTransform(x, [-100, 0], [1, 0])
+
+  const finalPrice = garment.discount_percent > 0
+    ? garment.price * (1 - garment.discount_percent / 100)
+    : garment.price
+
+  const handleDragEnd = useCallback(
+    (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      const threshold = 120
+      if (info.offset.x > threshold) {
+        onSwipeRight()
+      } else if (info.offset.x < -threshold) {
+        onSwipeLeft()
+      }
+    },
+    [onSwipeLeft, onSwipeRight]
+  )
+
+  return (
+    <motion.div
+      className="absolute inset-0 cursor-grab active:cursor-grabbing"
+      style={{ x, rotate, zIndex: isTop ? 10 : 0 }}
+      drag={isTop ? "x" : false}
+      dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+      dragElastic={0.9}
+      onDragEnd={handleDragEnd}
+      whileTap={{ scale: 1.02 }}
+      exit={{ x: 300, opacity: 0, transition: { duration: 0.3 } }}
+    >
+      <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+        {/* Image */}
+        <div className="relative h-[65%] w-full overflow-hidden">
+          <img
+            src={garment.image_url}
+            alt={garment.title}
+            className="h-full w-full object-cover"
+          />
+          {/* Swipe overlays */}
+          <motion.div
+            className="absolute inset-0 flex items-center justify-center bg-accent/30"
+            style={{ opacity: likeOpacity }}
+          >
+            <div className="rounded-xl border-4 border-accent bg-accent/90 px-8 py-3 rotate-[-15deg]">
+              <span className="text-3xl font-bold tracking-wide text-accent-foreground">ME GUSTA</span>
+            </div>
+          </motion.div>
+          <motion.div
+            className="absolute inset-0 flex items-center justify-center bg-destructive/20"
+            style={{ opacity: nopeOpacity }}
+          >
+            <div className="rounded-xl border-4 border-destructive bg-destructive/90 px-8 py-3 rotate-[15deg]">
+              <span className="text-3xl font-bold tracking-wide text-destructive-foreground">PASO</span>
+            </div>
+          </motion.div>
+          {/* Discount badge */}
+          {garment.discount_percent > 0 && (
+            <div className="absolute top-4 right-4 rounded-full bg-primary px-3 py-1.5">
+              <span className="text-sm font-bold text-primary-foreground">
+                -{garment.discount_percent}%
+              </span>
+            </div>
+          )}
+        </div>
+        {/* Info */}
+        <div className="flex h-[35%] flex-col justify-between p-5">
+          <div>
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="font-serif text-xl font-semibold text-foreground leading-tight text-balance">
+                {garment.title}
+              </h3>
+              <div className="flex flex-col items-end shrink-0">
+                {garment.discount_percent > 0 && (
+                  <span className="text-xs text-muted-foreground line-through">
+                    ${garment.price.toLocaleString('es-AR')}
+                  </span>
+                )}
+                <span className="text-lg font-bold text-primary">
+                  ${finalPrice.toLocaleString('es-AR')}
+                </span>
+              </div>
+            </div>
+            {garment.description && (
+              <p className="mt-1.5 text-sm text-muted-foreground line-clamp-2">
+                {garment.description}
+              </p>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {garment.size && (
+              <Badge variant="secondary" className="gap-1 bg-secondary text-secondary-foreground">
+                <Ruler className="h-3 w-3" />
+                {garment.size}
+              </Badge>
+            )}
+            {garment.brand && (
+              <Badge variant="secondary" className="gap-1 bg-secondary text-secondary-foreground">
+                <Tag className="h-3 w-3" />
+                {garment.brand}
+              </Badge>
+            )}
+            {garment.condition && (
+              <Badge variant="secondary" className="gap-1 bg-secondary text-secondary-foreground">
+                <Sparkles className="h-3 w-3" />
+                {garment.condition}
+              </Badge>
+            )}
+            {garment.tags?.slice(0, 2).map((tag) => (
+              <Badge key={tag} variant="outline" className="border-primary/30 text-primary text-xs">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+interface SwipeStackProps {
+  garments: Garment[]
+  onLike: (garment: Garment) => void
+  onPass: (garment: Garment) => void
+}
+
+export function SwipeStack({ garments, onLike, onPass }: SwipeStackProps) {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [exitDirection, setExitDirection] = useState<"left" | "right" | null>(null)
+
+  const currentGarment = garments[currentIndex]
+  const nextGarment = garments[currentIndex + 1]
+
+  const advance = useCallback(
+    (direction: "left" | "right") => {
+      if (!currentGarment) return
+      setExitDirection(direction)
+      if (direction === "right") {
+        onLike(currentGarment)
+      } else {
+        onPass(currentGarment)
+      }
+      setTimeout(() => {
+        setCurrentIndex((prev) => prev + 1)
+        setExitDirection(null)
+      }, 300)
+    },
+    [currentGarment, onLike, onPass]
+  )
+
+  if (currentIndex >= garments.length) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center">
+        <div className="rounded-full bg-secondary p-6">
+          <Sparkles className="h-10 w-10 text-primary" />
+        </div>
+        <h3 className="font-serif text-2xl font-semibold text-foreground">
+          Ya viste todas las prendas
+        </h3>
+        <p className="text-muted-foreground">
+          Volve pronto, siempre estamos sumando prendas nuevas.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex h-full flex-col">
+      {/* Cards stack area */}
+      <div className="relative flex-1 mx-4 my-2">
+        <AnimatePresence>
+          {nextGarment && (
+            <SwipeCard
+              key={nextGarment.id}
+              garment={nextGarment}
+              onSwipeLeft={() => {}}
+              onSwipeRight={() => {}}
+              isTop={false}
+            />
+          )}
+          {currentGarment && !exitDirection && (
+            <SwipeCard
+              key={currentGarment.id}
+              garment={currentGarment}
+              onSwipeLeft={() => advance("left")}
+              onSwipeRight={() => advance("right")}
+              isTop
+            />
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex items-center justify-center gap-8 pb-4 pt-2">
+        <button
+          type="button"
+          onClick={() => advance("left")}
+          className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-destructive/30 bg-card text-destructive shadow-lg transition-all hover:scale-110 hover:bg-destructive/10 active:scale-95"
+          aria-label="Pasar prenda"
+        >
+          <X className="h-7 w-7" />
+        </button>
+        <button
+          type="button"
+          onClick={() => advance("right")}
+          className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-accent/30 bg-card text-accent shadow-lg transition-all hover:scale-110 hover:bg-accent/10 active:scale-95"
+          aria-label="Me gusta esta prenda"
+        >
+          <Heart className="h-7 w-7" />
+        </button>
+      </div>
+    </div>
+  )
+}
