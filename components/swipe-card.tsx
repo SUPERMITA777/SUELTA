@@ -8,7 +8,7 @@ import {
   type PanInfo,
   AnimatePresence,
 } from "framer-motion"
-import { Heart, X, Tag, Ruler, Sparkles } from "lucide-react"
+import { Heart, X, Tag, Ruler, Sparkles, DollarSign } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import type { Garment } from "@/lib/types"
 
@@ -129,6 +129,12 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop }: SwipeCa
                 {garment.condition}
               </Badge>
             )}
+            {garment.allows_offer && (
+              <Badge className="bg-accent/20 text-accent-foreground border-0 gap-1">
+                <DollarSign className="h-3 w-3" />
+                Acepta ofertas
+              </Badge>
+            )}
             {garment.tags?.slice(0, 2).map((tag) => (
               <Badge key={tag} variant="outline" className="border-primary/30 text-primary text-xs">
                 {tag}
@@ -196,8 +202,8 @@ export function SwipeStack({ garments, onLike, onPass }: SwipeStackProps) {
             <SwipeCard
               key={nextGarment.id}
               garment={nextGarment}
-              onSwipeLeft={() => {}}
-              onSwipeRight={() => {}}
+              onSwipeLeft={() => { }}
+              onSwipeRight={() => { }}
               isTop={false}
             />
           )}

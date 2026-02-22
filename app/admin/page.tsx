@@ -19,6 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog"
 import {
   Plus,
@@ -32,6 +33,9 @@ import {
   Eye,
   EyeOff,
   Tag,
+  Settings,
+  TrendingUp,
+  CheckCircle2,
 } from "lucide-react"
 import { toast } from "sonner"
 import type { Garment, GarmentFormData } from "@/lib/types"
@@ -60,6 +64,7 @@ const emptyForm: GarmentFormData = {
   condition: "Buen estado",
   tags: [],
   image_url: "",
+  allows_offer: false,
 }
 
 export default function AdminDashboard() {
@@ -77,7 +82,17 @@ export default function AdminDashboard() {
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [tagInput, setTagInput] = useState("")
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [statsOpen, setStatsOpen] = useState(false)
+  const [whatsappNumber, setWhatsappNumber] = useState("")
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // Fetch settings
+  useSWR("/api/admin/settings", fetcher, {
+    onSuccess: (data) => {
+      if (data.whatsapp_number) setWhatsappNumber(data.whatsapp_number)
+    }
+  })
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -93,9 +108,11 @@ export default function AdminDashboard() {
     try {
       const formData = new FormData()
       formData.append("file", file)
+      console.log('Uploading file:', file.name, 'size:', file.size, 'type:', file.type)
       const res = await fetch("/api/upload", { method: "POST", body: formData })
       const data = await res.json()
       if (data.url) {
+        console.log('Upload successful:', data.url)
         setForm((prev) => ({ ...prev, image_url: data.url }))
         toast.success("Imagen subida")
       } else {
@@ -140,6 +157,7 @@ export default function AdminDashboard() {
       condition: garment.condition,
       tags: garment.tags || [],
       image_url: garment.image_url,
+      allows_offer: garment.allows_offer,
     })
     setDialogOpen(true)
   }
@@ -170,7 +188,8 @@ export default function AdminDashboard() {
       setDialogOpen(false)
       setForm(emptyForm)
       setEditingId(null)
-    } catch {
+    } catch (error: any) {
+      console.error('Error saving garment:', error)
       toast.error("Error al guardar")
     } finally {
       setSaving(false)
@@ -185,6 +204,27 @@ export default function AdminDashboard() {
     })
     mutate("/api/admin/garments")
     toast.success(garment.is_active ? "Prenda oculta" : "Prenda visible")
+  }
+
+  const handleToggleSold = async (garment: Garment) => {
+    await fetch("/api/admin/garments", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: garment.id, is_sold: !garment.is_sold }),
+    })
+    mutate("/api/admin/garments")
+    toast.success(garment.is_sold ? "Prenda disponible" : "Prenda marcada como vendida")
+  }
+
+  const handleSaveSettings = async () => {
+    await fetch("/api/admin/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: "whatsapp_number", value: whatsappNumber }),
+    })
+    mutate("/api/admin/settings")
+    toast.success("Configuracion guardada")
+    setSettingsOpen(false)
   }
 
   const handleDelete = async (id: string) => {
@@ -212,6 +252,24 @@ export default function AdminDashboard() {
           <Button
             variant="ghost"
             size="icon"
+            onClick={() => setStatsOpen(true)}
+            className="text-muted-foreground hover:text-foreground"
+            aria-label="Estadisticas"
+          >
+            <TrendingUp className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSettingsOpen(true)}
+            className="text-muted-foreground hover:text-foreground"
+            aria-label="Configuracion"
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={handleLogout}
             className="text-muted-foreground hover:text-foreground"
             aria-label="Cerrar sesion"
@@ -220,6 +278,74 @@ export default function AdminDashboard() {
           </Button>
         </div>
       </header>
+
+      {/* Settings Dialog */}
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="bg-card">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Configuracion</DialogTitle>
+            <DialogDescription>Ajusta el número de WhatsApp y otros parámetros globales.</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="wa">Numero de WhatsApp</Label>
+              <Input
+                id="wa"
+                placeholder="Ej: 5491112345678"
+                value={whatsappNumber}
+                onChange={(e) => setWhatsappNumber(e.target.value)}
+                className="bg-background border-border"
+              />
+              <p className="text-xs text-muted-foreground">
+                Incluye codigo de pais sin el signo +
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSaveSettings} className="w-full">
+              Guardar cambios
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Stats Dialog */}
+      <Dialog open={statsOpen} onOpenChange={setStatsOpen}>
+        <DialogContent className="max-w-md bg-card">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-foreground">Estadisticas</DialogTitle>
+            <DialogDescription>Resumen de popularidad y ventas de tus prendas.</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-6 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-xl border border-border bg-muted/50 p-4 text-center">
+                <span className="text-2xl font-bold text-foreground">
+                  {garments?.length ?? 0}
+                </span>
+                <p className="text-xs text-muted-foreground">Total prendas</p>
+              </div>
+              <div className="rounded-xl border border-border bg-muted/50 p-4 text-center">
+                <span className="text-2xl font-bold text-primary">
+                  {garments?.filter(g => g.is_sold).length ?? 0}
+                </span>
+                <p className="text-xs text-muted-foreground">Vendidas</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <h4 className="text-sm font-medium text-foreground">Mas gustadas</h4>
+              {garments?.sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0)).slice(0, 5).map(g => (
+                <div key={g.id} className="flex items-center justify-between text-sm">
+                  <span className="truncate text-muted-foreground pr-4">{g.title}</span>
+                  <Badge variant="secondary" className="shrink-0 bg-secondary text-secondary-foreground">
+                    {g.likes_count ?? 0} likes
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Toolbar */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -244,6 +370,9 @@ export default function AdminDashboard() {
               <DialogTitle className="font-serif text-foreground">
                 {editingId ? "Editar prenda" : "Nueva prenda"}
               </DialogTitle>
+              <DialogDescription>
+                {editingId ? "Modifica los detalles de la prenda seleccionada." : "Ingresa los datos para cargar una nueva prenda al catálogo."}
+              </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-4 py-2">
               {/* Image upload */}
@@ -392,6 +521,20 @@ export default function AdminDashboard() {
                 </Select>
               </div>
 
+              {/* Options */}
+              <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                <div className="flex flex-col gap-0.5">
+                  <Label className="text-foreground">Permitir oferta</Label>
+                  <span className="text-xs text-muted-foreground">Los clientes pueden proponer un precio</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={form.allows_offer}
+                  onChange={(e) => setForm((prev) => ({ ...prev, allows_offer: e.target.checked }))}
+                  className="h-5 w-5 accent-primary"
+                />
+              </div>
+
               {/* Tags */}
               <div className="flex flex-col gap-2">
                 <Label className="text-foreground">Etiquetas</Label>
@@ -519,6 +662,16 @@ export default function AdminDashboard() {
                             Oculta
                           </Badge>
                         )}
+                        {garment.is_sold && (
+                          <Badge className="text-xs bg-primary text-primary-foreground shrink-0 border-0">
+                            Vendido
+                          </Badge>
+                        )}
+                        {garment.allows_offer && (
+                          <Badge variant="secondary" className="text-xs bg-accent/20 text-accent-foreground shrink-0 border-0">
+                            Oferta
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-sm font-bold text-primary">
@@ -544,6 +697,15 @@ export default function AdminDashboard() {
                     </div>
                     {/* Actions */}
                     <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSold(garment)}
+                        className={`rounded-lg p-2 transition-colors ${garment.is_sold ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-secondary"}`}
+                        aria-label={garment.is_sold ? "Marcar como disponible" : "Marcar como vendido"}
+                        title={garment.is_sold ? "Marcar como disponible" : "Marcar como vendido"}
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleToggleActive(garment)}

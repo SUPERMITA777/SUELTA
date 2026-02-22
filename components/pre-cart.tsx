@@ -1,9 +1,11 @@
 "use client"
 
-import { Heart, X, Trash2, ShoppingBag, Ruler, Tag } from "lucide-react"
+import { useState } from "react"
+import { Heart, X, Trash2, ShoppingBag, Ruler, Tag, DollarSign } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Input } from "@/components/ui/input"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import type { Garment } from "@/lib/types"
@@ -12,9 +14,11 @@ interface PreCartProps {
   items: Garment[]
   onRemove: (id: string) => void
   count: number
+  whatsappNumber?: string
 }
 
-export function PreCart({ items, onRemove, count }: PreCartProps) {
+export function PreCart({ items, onRemove, count, whatsappNumber }: PreCartProps) {
+  const [offers, setOffers] = useState<Record<string, number>>({})
   const total = items.reduce((sum, item) => {
     const finalPrice = item.discount_percent > 0
       ? item.price * (1 - item.discount_percent / 100)
@@ -44,6 +48,9 @@ export function PreCart({ items, onRemove, count }: PreCartProps) {
             <Heart className="h-5 w-5 text-primary fill-primary" />
             Tus prendas elegidas
           </SheetTitle>
+          <SheetDescription>
+            Revisa los artículos que te gustaron y envíales tu propuesta por WhatsApp.
+          </SheetDescription>
         </SheetHeader>
         <Separator className="bg-border" />
         {items.length === 0 ? (
@@ -75,8 +82,8 @@ export function PreCart({ items, onRemove, count }: PreCartProps) {
                           className="h-full w-full object-cover"
                         />
                       </div>
-                      <div className="flex flex-1 flex-col justify-between min-w-0">
-                        <div>
+                      <div className="flex flex-1 flex-col gap-2 min-w-0">
+                        <div className="flex flex-col">
                           <h4 className="font-medium text-sm text-foreground truncate">{item.title}</h4>
                           <div className="flex items-center gap-2 mt-0.5">
                             {item.size && (
@@ -93,6 +100,23 @@ export function PreCart({ items, onRemove, count }: PreCartProps) {
                             )}
                           </div>
                         </div>
+
+                        {item.allows_offer && (
+                          <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-2 py-1.5 mt-1">
+                            <DollarSign className="h-3.5 w-3.5 text-primary shrink-0" />
+                            <div className="flex-1">
+                              <span className="text-[10px] uppercase font-bold text-primary block">Tu oferta</span>
+                              <input
+                                type="number"
+                                placeholder="Precio..."
+                                value={offers[item.id] || ""}
+                                onChange={(e) => setOffers(prev => ({ ...prev, [item.id]: Number(e.target.value) }))}
+                                className="w-full bg-transparent border-none p-0 text-sm font-semibold text-foreground placeholder:text-muted-foreground focus:ring-0"
+                              />
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex items-end justify-between">
                           <div className="flex items-center gap-2">
                             {item.discount_percent > 0 && (
@@ -136,13 +160,15 @@ export function PreCart({ items, onRemove, count }: PreCartProps) {
                       const fp = i.discount_percent > 0
                         ? i.price * (1 - i.discount_percent / 100)
                         : i.price
-                      return `- ${i.title} (${i.size || 'Talle unico'}) - $${fp.toLocaleString('es-AR')}`
+                      const offer = offers[i.id] ? ` -> OFERTA: $${offers[i.id].toLocaleString('es-AR')}` : ''
+                      return `- ${i.title} (${i.size || 'Talle unico'}) - $${fp.toLocaleString('es-AR')}${offer}`
                     })
                     .join('\n')
                   const text = encodeURIComponent(
                     `Hola! Me interesan estas prendas de SUELTA:\n\n${message}\n\nTotal: $${total.toLocaleString('es-AR')}`
                   )
-                  window.open(`https://wa.me/?text=${text}`, '_blank')
+                  const number = whatsappNumber || "5491112345678" // fallback
+                  window.open(`https://wa.me/${number}?text=${text}`, '_blank')
                 }}
               >
                 <ShoppingBag className="h-4 w-4" />

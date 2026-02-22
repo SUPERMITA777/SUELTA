@@ -12,13 +12,24 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json())
 
 export default function StorePage() {
   const { data: garments, isLoading } = useSWR<Garment[]>("/api/garments", fetcher)
+  const { data: settings } = useSWR("/api/admin/settings", fetcher)
   const [liked, setLiked] = useState<Garment[]>([])
 
-  const handleLike = useCallback((garment: Garment) => {
+  const handleLike = useCallback(async (garment: Garment) => {
     setLiked((prev) => {
       if (prev.some((g) => g.id === garment.id)) return prev
       return [...prev, garment]
     })
+    // Track like in DB
+    try {
+      await fetch("/api/likes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: garment.id }),
+      })
+    } catch (err) {
+      console.error("Error tracking like:", err)
+    }
   }, [])
 
   const handlePass = useCallback(() => {
@@ -44,7 +55,12 @@ export default function StorePage() {
           >
             <Instagram className="h-5 w-5" />
           </a>
-          <PreCart items={liked} onRemove={handleRemoveFromCart} count={liked.length} />
+          <PreCart
+            items={liked}
+            onRemove={handleRemoveFromCart}
+            count={liked.length}
+            whatsappNumber={settings?.whatsapp_number}
+          />
         </div>
       </header>
 

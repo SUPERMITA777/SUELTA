@@ -7,6 +7,7 @@ export async function GET() {
     .from('garments')
     .select('*')
     .eq('is_active', true)
+    .eq('is_sold', false)
     .order('created_at', { ascending: false })
 
   if (error) {
