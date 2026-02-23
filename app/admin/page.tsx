@@ -98,6 +98,7 @@ export default function AdminDashboard() {
   const [watermarkOpacity, setWatermarkOpacity] = useState(0.5)
   const [watermarkPosition, setWatermarkPosition] = useState("center")
   const [cropTarget, setCropTarget] = useState<'garment' | 'logo' | 'watermark'>('garment')
+  const [originalMimeType, setOriginalMimeType] = useState("image/jpeg")
 
   // Fetch settings
   useSWR("/api/admin/settings", fetcher, {
@@ -138,11 +139,11 @@ export default function AdminDashboard() {
     setImageToCrop(null)
     setUploading(true)
     try {
-      const file = new File([croppedBlob], originalFileName, { type: "image/jpeg" })
+      const file = new File([croppedBlob], originalFileName, { type: croppedBlob.type })
       const formData = new FormData()
       formData.append("file", file)
 
-      console.log('Uploading cropped file:', file.name, 'size:', file.size, 'target:', cropTarget)
+      console.log('Uploading cropped file:', file.name, 'size:', file.size, 'target:', cropTarget, 'type:', file.type)
       const res = await fetch("/api/upload", { method: "POST", body: formData })
       const data = await res.json()
 
@@ -288,10 +289,11 @@ export default function AdminDashboard() {
     if (!file) return
 
     setCropTarget(type)
+    setOriginalFileName(file.name)
+    setOriginalMimeType(file.type)
     const reader = new FileReader()
     reader.onload = () => {
       setImageToCrop(reader.result as string)
-      setOriginalFileName(file.name)
     }
     reader.readAsDataURL(file)
 
@@ -360,6 +362,7 @@ export default function AdminDashboard() {
           onCancel={() => setImageToCrop(null)}
           initialAspect={cropTarget === 'garment' ? 3 / 4 : 1}
           allowDynamicAspect={cropTarget !== 'garment'}
+          mimeType={originalMimeType}
         />
       )}
 

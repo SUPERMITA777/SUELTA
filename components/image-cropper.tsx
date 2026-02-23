@@ -13,6 +13,7 @@ interface ImageCropperProps {
     open: boolean
     initialAspect?: number
     allowDynamicAspect?: boolean
+    mimeType?: string
 }
 
 export const ImageCropper: React.FC<ImageCropperProps> = ({
@@ -21,7 +22,8 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     onCancel,
     open,
     initialAspect = 3 / 4,
-    allowDynamicAspect = false
+    allowDynamicAspect = false,
+    mimeType = 'image/jpeg'
 }) => {
     const [crop, setCrop] = useState({ x: 0, y: 0 })
     const [zoom, setZoom] = useState(1)
@@ -52,7 +54,8 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
 
     const getCroppedImg = async (
         imageSrc: string,
-        pixelCrop: any
+        pixelCrop: any,
+        mimeType: string
     ): Promise<Blob | null> => {
         const image = await createImage(imageSrc)
         const canvas = document.createElement('canvas')
@@ -78,13 +81,13 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
         return new Promise((resolve) => {
             canvas.toBlob((blob) => {
                 resolve(blob)
-            }, 'image/jpeg')
+            }, mimeType)
         })
     }
 
     const handleCrop = async () => {
         try {
-            const croppedImage = await getCroppedImg(image, croppedAreaPixels)
+            const croppedImage = await getCroppedImg(image, croppedAreaPixels, mimeType)
             if (croppedImage) {
                 onCropComplete(croppedImage)
             }
