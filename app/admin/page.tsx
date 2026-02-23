@@ -97,6 +97,7 @@ export default function AdminDashboard() {
   const [watermarkSize, setWatermarkSize] = useState(30)
   const [watermarkOpacity, setWatermarkOpacity] = useState(0.5)
   const [watermarkPosition, setWatermarkPosition] = useState("center")
+  const [cropTarget, setCropTarget] = useState<'garment' | 'logo' | 'watermark'>('garment')
 
   // Fetch settings
   useSWR("/api/admin/settings", fetcher, {
@@ -141,14 +142,22 @@ export default function AdminDashboard() {
       const formData = new FormData()
       formData.append("file", file)
 
-      console.log('Uploading cropped file:', file.name, 'size:', file.size)
+      console.log('Uploading cropped file:', file.name, 'size:', file.size, 'target:', cropTarget)
       const res = await fetch("/api/upload", { method: "POST", body: formData })
       const data = await res.json()
 
       if (data.url) {
         console.log('Upload successful:', data.url)
-        setForm((prev) => ({ ...prev, image_url: data.url }))
-        toast.success("Imagen recortada y subida")
+        if (cropTarget === 'garment') {
+          setForm((prev) => ({ ...prev, image_url: data.url }))
+          toast.success("Imagen de prenda subida")
+        } else if (cropTarget === 'logo') {
+          setLogoUrl(data.url)
+          toast.success("Logo subido")
+        } else if (cropTarget === 'watermark') {
+          setWatermarkUrl(data.url)
+          toast.success("Marca de agua subida")
+        }
       } else {
         toast.error("Error al subir imagen")
       }
@@ -278,26 +287,16 @@ export default function AdminDashboard() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    setUploading(true)
-    try {
-      const formData = new FormData()
-      formData.append("file", file)
-
-      const res = await fetch("/api/upload", { method: "POST", body: formData })
-      const data = await res.json()
-
-      if (data.url) {
-        if (type === 'logo') setLogoUrl(data.url)
-        else setWatermarkUrl(data.url)
-        toast.success("Imagen subida")
-      } else {
-        toast.error("Error al subir imagen")
-      }
-    } catch {
-      toast.error("Error al subir imagen")
-    } finally {
-      setUploading(false)
+    setCropTarget(type)
+    const reader = new FileReader()
+    reader.onload = () => {
+      setImageToCrop(reader.result as string)
+      setOriginalFileName(file.name)
     }
+    reader.readAsDataURL(file)
+
+    // Reset input so the same file can be selected again
+    e.target.value = ""
   }
 
   const handleDelete = async (id: string) => {
@@ -359,6 +358,8 @@ export default function AdminDashboard() {
           open={!!imageToCrop}
           onCropComplete={handleCroppedImage}
           onCancel={() => setImageToCrop(null)}
+          initialAspect={cropTarget === 'garment' ? 3 / 4 : 1}
+          allowDynamicAspect={cropTarget !== 'garment'}
         />
       )}
 
@@ -583,7 +584,10 @@ export default function AdminDashboard() {
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button
-              onClick={openNewDialog}
+              onClick={() => {
+                setCropTarget('garment')
+                openNewDialog()
+              }}
               className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <Plus className="h-4 w-4" />

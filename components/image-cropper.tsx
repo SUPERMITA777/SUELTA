@@ -11,12 +11,23 @@ interface ImageCropperProps {
     onCropComplete: (croppedImage: Blob) => void
     onCancel: () => void
     open: boolean
+    initialAspect?: number
+    allowDynamicAspect?: boolean
 }
 
-export const ImageCropper: React.FC<ImageCropperProps> = ({ image, onCropComplete, onCancel, open }) => {
+export const ImageCropper: React.FC<ImageCropperProps> = ({
+    image,
+    onCropComplete,
+    onCancel,
+    open,
+    initialAspect = 3 / 4,
+    allowDynamicAspect = false
+}) => {
     const [crop, setCrop] = useState({ x: 0, y: 0 })
     const [zoom, setZoom] = useState(1)
     const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null)
+    const [aspect, setAspect] = useState(initialAspect)
+    const [cropShape, setCropShape] = useState<'rect' | 'round'>('rect')
 
     const onCropChange = (crop: { x: number; y: number }) => {
         setCrop(crop)
@@ -97,12 +108,43 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({ image, onCropComplet
                         image={image}
                         crop={crop}
                         zoom={zoom}
-                        aspect={3 / 4}
+                        aspect={aspect}
+                        cropShape={cropShape}
+                        showGrid={cropShape === 'rect'}
                         onCropChange={onCropChange}
                         onCropComplete={onCropCompleteInternal}
                         onZoomChange={onZoomChange}
                     />
                 </div>
+
+                {allowDynamicAspect && (
+                    <div className="flex flex-col gap-2 pt-4">
+                        <span className="text-sm font-medium">Formato de recorte</span>
+                        <div className="flex flex-wrap gap-2">
+                            <Button
+                                variant={aspect === 1 && cropShape === 'rect' ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => { setAspect(1); setCropShape('rect'); }}
+                            >
+                                Cuadrado
+                            </Button>
+                            <Button
+                                variant={aspect === 16 / 9 ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => { setAspect(16 / 9); setCropShape('rect'); }}
+                            >
+                                Rectangular
+                            </Button>
+                            <Button
+                                variant={cropShape === 'round' ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => { setAspect(1); setCropShape('round'); }}
+                            >
+                                Circular
+                            </Button>
+                        </div>
+                    </div>
+                )}
 
                 <div className="flex flex-col gap-2 py-4">
                     <span className="text-sm font-medium">Zoom</span>
