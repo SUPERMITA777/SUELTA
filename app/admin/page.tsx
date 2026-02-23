@@ -90,10 +90,24 @@ export default function AdminDashboard() {
   const [originalFileName, setOriginalFileName] = useState("")
   const fileRef = useRef<HTMLInputElement>(null)
 
+  // New settings state
+  const [logoUrl, setLogoUrl] = useState("")
+  const [logoSize, setLogoSize] = useState(100)
+  const [watermarkUrl, setWatermarkUrl] = useState("")
+  const [watermarkSize, setWatermarkSize] = useState(30)
+  const [watermarkOpacity, setWatermarkOpacity] = useState(0.5)
+  const [watermarkPosition, setWatermarkPosition] = useState("center")
+
   // Fetch settings
   useSWR("/api/admin/settings", fetcher, {
     onSuccess: (data) => {
       if (data.whatsapp_number) setWhatsappNumber(data.whatsapp_number)
+      if (data.logo_url) setLogoUrl(data.logo_url)
+      if (data.logo_size) setLogoSize(Number(data.logo_size))
+      if (data.watermark_url) setWatermarkUrl(data.watermark_url)
+      if (data.watermark_size) setWatermarkSize(Number(data.watermark_size))
+      if (data.watermark_opacity) setWatermarkOpacity(Number(data.watermark_opacity))
+      if (data.watermark_position) setWatermarkPosition(data.watermark_position)
     }
   })
 
@@ -237,14 +251,53 @@ export default function AdminDashboard() {
   }
 
   const handleSaveSettings = async () => {
-    await fetch("/api/admin/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key: "whatsapp_number", value: whatsappNumber }),
-    })
+    const settingsToSave = [
+      { key: "whatsapp_number", value: whatsappNumber },
+      { key: "logo_url", value: logoUrl },
+      { key: "logo_size", value: logoSize.toString() },
+      { key: "watermark_url", value: watermarkUrl },
+      { key: "watermark_size", value: watermarkSize.toString() },
+      { key: "watermark_opacity", value: watermarkOpacity.toString() },
+      { key: "watermark_position", value: watermarkPosition },
+    ]
+
+    for (const setting of settingsToSave) {
+      await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(setting),
+      })
+    }
+
     mutate("/api/admin/settings")
     toast.success("Configuracion guardada")
     setSettingsOpen(false)
+  }
+
+  const handleUploadSettingImage = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'watermark') => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const res = await fetch("/api/upload", { method: "POST", body: formData })
+      const data = await res.json()
+
+      if (data.url) {
+        if (type === 'logo') setLogoUrl(data.url)
+        else setWatermarkUrl(data.url)
+        toast.success("Imagen subida")
+      } else {
+        toast.error("Error al subir imagen")
+      }
+    } catch {
+      toast.error("Error al subir imagen")
+    } finally {
+      setUploading(false)
+    }
   }
 
   const handleDelete = async (id: string) => {
@@ -311,12 +364,13 @@ export default function AdminDashboard() {
 
       {/* Settings Dialog */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="bg-card">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto bg-card sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="font-serif">Configuracion</DialogTitle>
-            <DialogDescription>Ajusta el número de WhatsApp y otros parámetros globales.</DialogDescription>
+            <DialogDescription>Ajusta el logo, la marca de agua y otros parámetros globales.</DialogDescription>
           </DialogHeader>
-          <div className="flex flex-col gap-4 py-4">
+          <div className="flex flex-col gap-6 py-4">
+            {/* WhatsApp */}
             <div className="flex flex-col gap-2">
               <Label htmlFor="wa">Numero de WhatsApp</Label>
               <Input
@@ -329,6 +383,147 @@ export default function AdminDashboard() {
               <p className="text-xs text-muted-foreground">
                 Incluye codigo de pais sin el signo +
               </p>
+            </div>
+
+            <Separator />
+
+            {/* Logo Configuration */}
+            <div className="flex flex-col gap-4">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Logo</h3>
+
+              <div className="flex flex-col gap-2">
+                <Label>Imagen del Logo</Label>
+                <div className="flex items-center gap-4">
+                  {logoUrl ? (
+                    <div className="relative h-16 w-16 overflow-hidden rounded-lg border border-border">
+                      <img src={logoUrl} alt="Logo" className="h-full w-full object-contain" />
+                      <button
+                        onClick={() => setLogoUrl("")}
+                        className="absolute -right-1 -top-1 rounded-full bg-destructive p-0.5 text-destructive-foreground shadow-sm"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="h-16 w-16 rounded-lg border-2 border-dashed border-border flex items-center justify-center text-muted-foreground">
+                      <ImageIcon className="h-6 w-6" />
+                    </div>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const input = document.createElement('input')
+                      input.type = 'file'
+                      input.accept = 'image/*'
+                      input.onchange = (e) => handleUploadSettingImage(e as any, 'logo')
+                      input.click()
+                    }}
+                    disabled={uploading}
+                  >
+                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Subir Logo"}
+                  </Button>
+                </div>
+              </div>
+
+              {logoUrl && (
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between items-center">
+                    <Label>Tamaño del Logo ({logoSize}px)</Label>
+                  </div>
+                  <Input
+                    type="number"
+                    value={logoSize}
+                    onChange={(e) => setLogoSize(Number(e.target.value))}
+                    className="bg-background border-border"
+                  />
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Watermark Configuration */}
+            <div className="flex flex-col gap-4">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Marca de Agua</h3>
+
+              <div className="flex flex-col gap-2">
+                <Label>Imagen de la Marca de Agua</Label>
+                <div className="flex items-center gap-4">
+                  {watermarkUrl ? (
+                    <div className="relative h-16 w-16 overflow-hidden rounded-lg border border-border">
+                      <img src={watermarkUrl} alt="Watermark" className="h-full w-full object-contain" />
+                      <button
+                        onClick={() => setWatermarkUrl("")}
+                        className="absolute -right-1 -top-1 rounded-full bg-destructive p-0.5 text-destructive-foreground shadow-sm"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="h-16 w-16 rounded-lg border-2 border-dashed border-border flex items-center justify-center text-muted-foreground">
+                      <ImageIcon className="h-6 w-6" />
+                    </div>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const input = document.createElement('input')
+                      input.type = 'file'
+                      input.accept = 'image/*'
+                      input.onchange = (e) => handleUploadSettingImage(e as any, 'watermark')
+                      input.click()
+                    }}
+                    disabled={uploading}
+                  >
+                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Subir Marca"}
+                  </Button>
+                </div>
+              </div>
+
+              {watermarkUrl && (
+                <>
+                  <div className="flex flex-col gap-2">
+                    <Label>Tamaño (% del ancho)</Label>
+                    <Input
+                      type="number"
+                      value={watermarkSize}
+                      onChange={(e) => setWatermarkSize(Number(e.target.value))}
+                      className="bg-background border-border"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <Label>Transparencia ({Math.round(watermarkOpacity * 100)}%)</Label>
+                    <Input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={watermarkOpacity}
+                      onChange={(e) => setWatermarkOpacity(Number(e.target.value))}
+                      className="h-2 w-full cursor-pointer accent-primary"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <Label>Ubicación</Label>
+                    <Select value={watermarkPosition} onValueChange={setWatermarkPosition}>
+                      <SelectTrigger className="bg-background border-border">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="center">Centro</SelectItem>
+                        <SelectItem value="top-left">Arriba Izquierda</SelectItem>
+                        <SelectItem value="top-right">Arriba Derecha</SelectItem>
+                        <SelectItem value="bottom-left">Abajo Izquierda</SelectItem>
+                        <SelectItem value="bottom-right">Abajo Derecha</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
             </div>
           </div>
           <DialogFooter>

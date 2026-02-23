@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
+import useSWR from "swr"
 import {
   motion,
   useMotionValue,
@@ -20,7 +21,26 @@ interface SwipeCardProps {
   custom?: "left" | "right" | null
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
 export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }: SwipeCardProps) {
+  const { data: settings } = useSWR("/api/admin/settings", fetcher)
+
+  const watermarkUrl = settings?.watermark_url
+  const watermarkSize = settings?.watermark_size ? Number(settings.watermark_size) : 30
+  const watermarkOpacity = settings?.watermark_opacity ? Number(settings.watermark_opacity) : 0.5
+  const watermarkPosition = settings?.watermark_position || "center"
+
+  const getWatermarkPositionClasses = () => {
+    switch (watermarkPosition) {
+      case 'top-left': return 'top-4 left-4'
+      case 'top-right': return 'top-4 right-4'
+      case 'bottom-left': return 'bottom-4 left-4'
+      case 'bottom-right': return 'bottom-4 right-4'
+      case 'center':
+      default: return 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'
+    }
+  }
   const x = useMotionValue(0)
   const rotate = useTransform(x, [-300, 0, 300], [-18, 0, 18])
   const likeOpacity = useTransform(x, [0, 100], [0, 1])
@@ -71,6 +91,19 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
             alt={garment.title}
             className="h-full w-full object-cover"
           />
+          {/* Watermark */}
+          {watermarkUrl && (
+            <img
+              src={watermarkUrl}
+              alt=""
+              className={`absolute pointer-events-none ${getWatermarkPositionClasses()}`}
+              style={{
+                width: `${watermarkSize}%`,
+                opacity: watermarkOpacity,
+                zIndex: 1
+              }}
+            />
+          )}
           {/* Swipe overlays */}
           <motion.div
             className="absolute inset-0 flex items-center justify-center bg-accent/30"
