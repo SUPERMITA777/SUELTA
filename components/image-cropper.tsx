@@ -23,8 +23,10 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
     open,
     initialAspect = 3 / 4,
     allowDynamicAspect = false,
-    mimeType = 'image/jpeg'
+    mimeType
 }) => {
+    const finalMimeType = mimeType || (image.startsWith('data:image/png') ? 'image/png' : 'image/jpeg')
+
     const [crop, setCrop] = useState({ x: 0, y: 0 })
     const [zoom, setZoom] = useState(1)
     const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null)
@@ -66,6 +68,21 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
         canvas.width = pixelCrop.width
         canvas.height = pixelCrop.height
 
+        // Ensure canvas is transparent
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+        if (cropShape === 'round') {
+            ctx.beginPath()
+            ctx.arc(
+                canvas.width / 2,
+                canvas.height / 2,
+                Math.min(canvas.width, canvas.height) / 2,
+                0,
+                2 * Math.PI
+            )
+            ctx.clip()
+        }
+
         ctx.drawImage(
             image,
             pixelCrop.x,
@@ -79,15 +96,19 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
         )
 
         return new Promise((resolve) => {
+            console.log('Generating blob with MIME type:', finalMimeType)
             canvas.toBlob((blob) => {
+                if (blob) {
+                    console.log('Blob generated successfully:', blob.type, 'size:', blob.size)
+                }
                 resolve(blob)
-            }, mimeType)
+            }, finalMimeType)
         })
     }
 
     const handleCrop = async () => {
         try {
-            const croppedImage = await getCroppedImg(image, croppedAreaPixels, mimeType)
+            const croppedImage = await getCroppedImg(image, croppedAreaPixels, finalMimeType)
             if (croppedImage) {
                 onCropComplete(croppedImage)
             }

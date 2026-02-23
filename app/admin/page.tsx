@@ -143,7 +143,12 @@ export default function AdminDashboard() {
       const formData = new FormData()
       formData.append("file", file)
 
-      console.log('Uploading cropped file:', file.name, 'size:', file.size, 'target:', cropTarget, 'type:', file.type)
+      console.log('Final Upload File:', {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        target: cropTarget
+      })
       const res = await fetch("/api/upload", { method: "POST", body: formData })
       const data = await res.json()
 
