@@ -17,9 +17,10 @@ interface SwipeCardProps {
   onSwipeLeft: () => void
   onSwipeRight: () => void
   isTop: boolean
+  custom?: "left" | "right" | null
 }
 
-export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop }: SwipeCardProps) {
+export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }: SwipeCardProps) {
   const x = useMotionValue(0)
   const rotate = useTransform(x, [-300, 0, 300], [-18, 0, 18])
   const likeOpacity = useTransform(x, [0, 100], [0, 1])
@@ -41,16 +42,26 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop }: SwipeCa
     [onSwipeLeft, onSwipeRight]
   )
 
+  const variants = {
+    exit: (direction: "left" | "right" | null) => ({
+      x: direction === "left" ? -500 : direction === "right" ? 500 : 0,
+      opacity: 0,
+      transition: { duration: 0.3 }
+    })
+  }
+
   return (
     <motion.div
       className="absolute inset-0 cursor-grab active:cursor-grabbing"
+      custom={custom}
+      variants={variants}
       style={{ x, rotate, zIndex: isTop ? 10 : 0 }}
       drag={isTop ? "x" : false}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       dragElastic={0.9}
       onDragEnd={handleDragEnd}
       whileTap={{ scale: 1.02 }}
-      exit={{ x: 300, opacity: 0, transition: { duration: 0.3 } }}
+      exit="exit"
     >
       <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
         {/* Image */}
@@ -195,9 +206,8 @@ export function SwipeStack({ garments, onLike, onPass }: SwipeStackProps) {
 
   return (
     <div className="flex h-full flex-col items-center">
-      {/* Cards stack area */}
       <div className="relative flex-1 w-full max-w-[420px] mx-auto my-2 px-4">
-        <AnimatePresence>
+        <AnimatePresence custom={exitDirection}>
           {nextGarment && (
             <SwipeCard
               key={nextGarment.id}
@@ -214,6 +224,7 @@ export function SwipeStack({ garments, onLike, onPass }: SwipeStackProps) {
               onSwipeLeft={() => advance("left")}
               onSwipeRight={() => advance("right")}
               isTop
+              custom={exitDirection}
             />
           )}
         </AnimatePresence>
