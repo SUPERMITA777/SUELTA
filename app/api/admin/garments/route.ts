@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 
 export async function GET() {
   const supabase = await createClient()
-  
+
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -15,6 +15,7 @@ export async function GET() {
     .order('created_at', { ascending: false })
 
   if (error) {
+    console.error('Supabase error (GET):', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
@@ -23,7 +24,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const supabase = await createClient()
-  
+
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
     .single()
 
   if (error) {
+    console.error('Supabase error (POST):', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
@@ -45,7 +47,7 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   const supabase = await createClient()
-  
+
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -61,6 +63,7 @@ export async function PUT(request: Request) {
     .single()
 
   if (error) {
+    console.error('Supabase error (PUT):', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
@@ -69,7 +72,7 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   const supabase = await createClient()
-  
+
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -82,6 +85,7 @@ export async function DELETE(request: Request) {
     .eq('id', id)
 
   if (error) {
+    console.error('Supabase error (DELETE):', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
