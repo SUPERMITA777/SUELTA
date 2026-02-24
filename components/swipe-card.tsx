@@ -85,7 +85,7 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
     >
       <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
         {/* Image */}
-        <div className="relative h-[65%] w-full overflow-hidden">
+        <div className="relative h-[75%] w-full overflow-hidden">
           <img
             src={garment.image_url}
             alt={garment.title}
@@ -131,7 +131,7 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
           )}
         </div>
         {/* Info */}
-        <div className="flex h-[35%] flex-col justify-between p-5">
+        <div className="flex h-[25%] flex-col justify-between p-5">
           <div>
             <div className="flex items-start justify-between gap-2">
               <h3 className="font-serif text-xl font-semibold text-foreground leading-tight text-balance">
@@ -263,24 +263,11 @@ export function SwipeStack({ garments, onLike, onPass }: SwipeStackProps) {
         </AnimatePresence>
       </div>
 
-      {/* Action buttons */}
-      <div className="flex items-center justify-center gap-8 pb-4 pt-2">
-        <button
-          type="button"
-          onClick={() => advance("left")}
-          className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-destructive/30 bg-card text-destructive shadow-lg transition-all hover:scale-110 hover:bg-destructive/10 active:scale-95"
-          aria-label="Pasar prenda"
-        >
-          <X className="h-7 w-7" />
-        </button>
-        <button
-          type="button"
-          onClick={() => advance("right")}
-          className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-accent/30 bg-card text-accent shadow-lg transition-all hover:scale-110 hover:bg-accent/10 active:scale-95"
-          aria-label="Me gusta esta prenda"
-        >
-          <Heart className="h-7 w-7" />
-        </button>
+      {/* Instructions text */}
+      <div className="py-4 text-center">
+        <p className="text-xs font-medium text-muted-foreground/60 tracking-wider uppercase">
+          Desliza <span className="text-destructive mx-1">←</span> para pasar | Desliza <span className="text-accent mx-1">→</span> si te gusta
+        </p>
       </div>
     </div>
   )
