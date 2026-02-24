@@ -73,6 +73,7 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
 
   const [showViewer, setShowViewer] = useState(false)
   const [scale, setScale] = useState(1)
+  const [baseScale, setBaseScale] = useState(1)
   const imageRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -230,9 +231,16 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
 
             <div className="flex-1 relative overflow-hidden flex items-center justify-center p-4">
               <motion.div
-                drag
-                dragConstraints={{ left: -500, right: 500, top: -500, bottom: 500 }}
+                drag={scale > 1}
+                dragConstraints={{ left: -300 * scale, right: 300 * scale, top: -400 * scale, bottom: 400 * scale }}
                 dragElastic={0.1}
+                onPinchStart={() => {
+                  setBaseScale(scale)
+                }}
+                onPinch={(event, info) => {
+                  const newScale = Math.min(Math.max(1, baseScale * info.scale), 4)
+                  setScale(newScale)
+                }}
                 style={{ scale }}
                 className="w-full max-w-2xl aspect-[3/4] relative"
               >
