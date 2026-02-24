@@ -65,6 +65,7 @@ const emptyForm: GarmentFormData = {
   condition: "Buen estado",
   tags: [],
   image_url: "",
+  image_urls: [],
   allows_offer: false,
 }
 
@@ -155,7 +156,14 @@ export default function AdminDashboard() {
       if (data.url) {
         console.log('Upload successful:', data.url)
         if (cropTarget === 'garment') {
-          setForm((prev) => ({ ...prev, image_url: data.url }))
+          setForm((prev) => {
+            const newUrls = [...(prev.image_urls || []), data.url]
+            return {
+              ...prev,
+              image_urls: newUrls,
+              image_url: newUrls[0] || data.url
+            }
+          })
           toast.success("Imagen de prenda subida")
         } else if (cropTarget === 'logo') {
           setLogoUrl(data.url)
@@ -206,6 +214,7 @@ export default function AdminDashboard() {
       condition: garment.condition,
       tags: garment.tags || [],
       image_url: garment.image_url,
+      image_urls: garment.image_urls || [garment.image_url],
       allows_offer: garment.allows_offer,
     })
     setDialogOpen(true)
@@ -218,18 +227,24 @@ export default function AdminDashboard() {
     }
     setSaving(true)
     try {
+      // Ensure image_url is the first from image_urls
+      const updatedForm = { ...form }
+      if (updatedForm.image_urls && updatedForm.image_urls.length > 0) {
+        updatedForm.image_url = updatedForm.image_urls[0]
+      }
+
       if (editingId) {
         await fetch("/api/admin/garments", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: editingId, ...form }),
+          body: JSON.stringify({ id: editingId, ...updatedForm }),
         })
         toast.success("Prenda actualizada")
       } else {
         await fetch("/api/admin/garments", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
+          body: JSON.stringify(updatedForm),
         })
         toast.success("Prenda creada")
       }
