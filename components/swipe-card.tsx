@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import useSWR from "swr"
 import {
   motion,
@@ -8,8 +8,9 @@ import {
   useTransform,
   type PanInfo,
   AnimatePresence,
+  useSpring,
 } from "framer-motion"
-import { Heart, X, Tag, Ruler, Sparkles, DollarSign } from "lucide-react"
+import { Heart, X, Tag, Ruler, Sparkles, DollarSign, Maximize2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import type { Garment } from "@/lib/types"
 
@@ -70,124 +71,189 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
     })
   }
 
+  const [showViewer, setShowViewer] = useState(false)
+  const [scale, setScale] = useState(1)
+  const imageRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showViewer) {
+      setScale(1)
+    }
+  }, [showViewer])
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!showViewer) return
+    const delta = e.deltaY * -0.001
+    const newScale = Math.min(Math.max(1, scale + delta), 4)
+    setScale(newScale)
+  }
+
   return (
-    <motion.div
-      className="absolute inset-0 cursor-grab active:cursor-grabbing"
-      custom={custom}
-      variants={variants}
-      style={{ x, rotate, zIndex: isTop ? 10 : 0 }}
-      drag={isTop ? "x" : false}
-      dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-      dragElastic={0.9}
-      onDragEnd={handleDragEnd}
-      whileTap={{ scale: 1.02 }}
-      exit="exit"
-    >
-      <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
-        {/* Image */}
-        <div className="relative h-[75%] w-full overflow-hidden">
-          <img
-            src={garment.image_url}
-            alt={garment.title}
-            className="h-full w-full object-cover"
-          />
-          {/* Watermark */}
-          {watermarkUrl && (
+    <>
+      <motion.div
+        className="absolute inset-0 cursor-grab active:cursor-grabbing"
+        custom={custom}
+        variants={variants}
+        style={{ x, rotate, zIndex: isTop ? 10 : 0 }}
+        drag={isTop ? "x" : false}
+        dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+        dragElastic={0.9}
+        onDragEnd={handleDragEnd}
+        whileTap={{ scale: 1.02 }}
+        exit="exit"
+      >
+        <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+          {/* Image */}
+          <div
+            className="relative h-[75%] w-full overflow-hidden cursor-zoom-in group"
+            onClick={() => setShowViewer(true)}
+          >
             <img
-              src={watermarkUrl}
-              alt=""
-              className={`absolute pointer-events-none ${getWatermarkPositionClasses()}`}
-              style={{
-                width: `${watermarkSize}%`,
-                opacity: watermarkOpacity,
-                zIndex: 1
-              }}
+              src={garment.image_url}
+              alt={garment.title}
+              className="h-full w-full object-cover"
             />
-          )}
-          {/* Swipe overlays */}
-          <motion.div
-            className="absolute inset-0 flex items-center justify-center bg-accent/30"
-            style={{ opacity: likeOpacity }}
-          >
-            <div className="rounded-xl border-4 border-accent bg-accent/90 px-8 py-3 rotate-[-15deg]">
-              <span className="text-3xl font-bold tracking-wide text-accent-foreground">ME GUSTA</span>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
+              <Maximize2 className="h-8 w-8 text-white" />
             </div>
-          </motion.div>
-          <motion.div
-            className="absolute inset-0 flex items-center justify-center bg-destructive/20"
-            style={{ opacity: nopeOpacity }}
-          >
-            <div className="rounded-xl border-4 border-destructive bg-destructive/90 px-8 py-3 rotate-[15deg]">
-              <span className="text-3xl font-bold tracking-wide text-destructive-foreground">PASO</span>
-            </div>
-          </motion.div>
-          {/* Discount badge */}
-          {garment.discount_percent > 0 && (
-            <div className="absolute top-4 right-4 rounded-full bg-primary px-3 py-1.5">
-              <span className="text-sm font-bold text-primary-foreground">
-                -{garment.discount_percent}%
-              </span>
-            </div>
-          )}
-        </div>
-        {/* Info */}
-        <div className="flex h-[25%] flex-col justify-between p-5">
-          <div>
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="font-serif text-xl font-semibold text-foreground leading-tight text-balance">
-                {garment.title}
-              </h3>
-              <div className="flex flex-col items-end shrink-0">
-                {garment.discount_percent > 0 && (
-                  <span className="text-xs text-muted-foreground line-through">
-                    ${garment.price.toLocaleString('es-AR')}
-                  </span>
-                )}
-                <span className="text-lg font-bold text-primary">
-                  ${finalPrice.toLocaleString('es-AR')}
+            {/* Watermark */}
+            {watermarkUrl && (
+              <img
+                src={watermarkUrl}
+                alt=""
+                className={`absolute pointer-events-none ${getWatermarkPositionClasses()}`}
+                style={{
+                  width: `${watermarkSize}%`,
+                  opacity: watermarkOpacity,
+                  zIndex: 1
+                }}
+              />
+            )}
+            {/* Swipe overlays */}
+            <motion.div
+              className="absolute inset-0 flex items-center justify-center bg-accent/30 pointer-events-none"
+              style={{ opacity: likeOpacity }}
+            >
+              <div className="rounded-xl border-4 border-accent bg-accent/90 px-8 py-3 rotate-[-15deg]">
+                <span className="text-3xl font-bold tracking-wide text-accent-foreground">ME GUSTA</span>
+              </div>
+            </motion.div>
+            <motion.div
+              className="absolute inset-0 flex items-center justify-center bg-destructive/20 pointer-events-none"
+              style={{ opacity: nopeOpacity }}
+            >
+              <div className="rounded-xl border-4 border-destructive bg-destructive/90 px-8 py-3 rotate-[15deg]">
+                <span className="text-3xl font-bold tracking-wide text-destructive-foreground">PASO</span>
+              </div>
+            </motion.div>
+            {/* Discount badge */}
+            {garment.discount_percent > 0 && (
+              <div className="absolute top-4 right-4 rounded-full bg-primary px-3 py-1.5">
+                <span className="text-sm font-bold text-primary-foreground">
+                  -{garment.discount_percent}%
                 </span>
               </div>
-            </div>
-            {garment.description && (
-              <p className="mt-1.5 text-sm text-muted-foreground line-clamp-2">
-                {garment.description}
-              </p>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {garment.size && (
-              <Badge variant="secondary" className="gap-1 bg-secondary text-secondary-foreground">
-                <Ruler className="h-3 w-3" />
-                {garment.size}
-              </Badge>
-            )}
-            {garment.brand && (
-              <Badge variant="secondary" className="gap-1 bg-secondary text-secondary-foreground">
-                <Tag className="h-3 w-3" />
-                {garment.brand}
-              </Badge>
-            )}
-            {garment.condition && (
-              <Badge variant="secondary" className="gap-1 bg-secondary text-secondary-foreground">
-                <Sparkles className="h-3 w-3" />
-                {garment.condition}
-              </Badge>
-            )}
-            {garment.allows_offer && (
-              <Badge className="bg-accent/20 text-accent-foreground border-0 gap-1">
-                <DollarSign className="h-3 w-3" />
-                Acepta ofertas
-              </Badge>
-            )}
-            {garment.tags?.slice(0, 2).map((tag) => (
-              <Badge key={tag} variant="outline" className="border-primary/30 text-primary text-xs">
-                {tag}
-              </Badge>
-            ))}
+          {/* Info */}
+          <div className="flex h-[25%] flex-col justify-between p-5">
+            <div>
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="font-serif text-2xl font-semibold text-foreground leading-tight text-balance">
+                  {garment.title}
+                </h3>
+                <div className="flex flex-col items-end shrink-0">
+                  {garment.discount_percent > 0 && (
+                    <span className="text-xs text-muted-foreground line-through">
+                      ${garment.price.toLocaleString('es-AR')}
+                    </span>
+                  )}
+                  <span className="text-xl font-bold text-primary">
+                    ${finalPrice.toLocaleString('es-AR')}
+                  </span>
+                </div>
+              </div>
+              {garment.description && (
+                <p className="mt-2 text-base text-muted-foreground line-clamp-2">
+                  {garment.description}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {garment.size && (
+                <Badge variant="secondary" className="gap-1 bg-secondary text-secondary-foreground text-xs px-2 py-0.5">
+                  <Ruler className="h-3 w-3" />
+                  {garment.size}
+                </Badge>
+              )}
+              {garment.brand && (
+                <Badge variant="secondary" className="gap-1 bg-secondary text-secondary-foreground text-xs px-2 py-0.5">
+                  <Tag className="h-3 w-3" />
+                  {garment.brand}
+                </Badge>
+              )}
+              {garment.condition && (
+                <Badge variant="secondary" className="gap-1 bg-secondary text-secondary-foreground text-xs px-2 py-0.5">
+                  <Sparkles className="h-3 w-3" />
+                  {garment.condition}
+                </Badge>
+              )}
+              {garment.allows_offer && (
+                <Badge className="bg-accent/20 text-accent-foreground border-0 gap-1 text-xs px-2 py-0.5">
+                  <DollarSign className="h-3 w-3" />
+                  Acepta ofertas
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+
+      <AnimatePresence>
+        {showViewer && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex flex-col bg-black/95 backdrop-blur-sm touch-none"
+            onWheel={handleWheel}
+          >
+            <div className="flex h-16 items-center justify-between px-6 pt-4">
+              <h4 className="font-serif text-xl text-white truncate max-w-[70%]">{garment.title}</h4>
+              <button
+                onClick={() => setShowViewer(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 active:scale-90 transition-all"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="flex-1 relative overflow-hidden flex items-center justify-center p-4">
+              <motion.div
+                drag
+                dragConstraints={{ left: -500, right: 500, top: -500, bottom: 500 }}
+                dragElastic={0.1}
+                style={{ scale }}
+                className="w-full max-w-2xl aspect-[3/4] relative"
+              >
+                <img
+                  src={garment.image_url}
+                  alt={garment.title}
+                  className="h-full w-full object-contain drop-shadow-2xl"
+                  draggable={false}
+                />
+              </motion.div>
+            </div>
+
+            <div className="p-8 text-center bg-gradient-to-t from-black/60 to-transparent">
+              <p className="text-white/60 text-sm">
+                Usa la rueda del mouse o pincha para hacer zoom • Arrastra para explorar
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   )
 }
 
@@ -263,12 +329,6 @@ export function SwipeStack({ garments, onLike, onPass }: SwipeStackProps) {
         </AnimatePresence>
       </div>
 
-      {/* Instructions text */}
-      <div className="py-4 text-center">
-        <p className="text-xs font-medium text-muted-foreground/60 tracking-wider uppercase">
-          Desliza <span className="text-destructive mx-1">←</span> para pasar | Desliza <span className="text-accent mx-1">→</span> si te gusta
-        </p>
-      </div>
     </div>
   )
 }
