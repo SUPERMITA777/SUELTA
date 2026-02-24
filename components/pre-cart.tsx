@@ -26,6 +26,31 @@ export function PreCart({ items, onRemove, count, whatsappNumber }: PreCartProps
     return sum + finalPrice
   }, 0)
 
+  const message = items
+    .map((i) => {
+      const fp = i.discount_percent > 0
+        ? i.price * (1 - i.discount_percent / 100)
+        : i.price
+      const offer = offers[i.id] ? ` -> OFERTA: $${offers[i.id].toLocaleString('es-AR')}` : ''
+      return `- ${i.title} (${i.size || 'Talle unico'}) - $${fp.toLocaleString('es-AR')}${offer}`
+    })
+    .join('\n')
+
+  const text = encodeURIComponent(
+    `Hola! Me interesan estas prendas de SUELTA:\n\n${message}\n\nTotal: $${total.toLocaleString('es-AR')}`
+  )
+
+  const formatWhatsAppNumber = (num: string) => {
+    const cleaned = num.replace(/\D/g, "")
+    // Caso 1: Tiene 13 dígitos y empieza con 549 (Ideal: 5491162239598)
+    if (cleaned.length === 13 && cleaned.startsWith("549")) return cleaned
+    // Caso 2: Tiene 12 dígitos y empieza con 54 (Falta el 9: 541162239598)
+    if (cleaned.length === 12 && cleaned.startsWith("54")) return "549" + cleaned.substring(2)
+    // Caso 3: Tiene 10 dígitos (Número local: 1162239598)
+    if (cleaned.length === 10) return "549" + cleaned
+    return cleaned
+  }
+
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -153,27 +178,18 @@ export function PreCart({ items, onRemove, count, whatsappNumber }: PreCartProps
                 </span>
               </div>
               <Button
+                asChild
                 className="w-full gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
                 size="lg"
-                onClick={() => {
-                  const message = items
-                    .map((i) => {
-                      const fp = i.discount_percent > 0
-                        ? i.price * (1 - i.discount_percent / 100)
-                        : i.price
-                      const offer = offers[i.id] ? ` -> OFERTA: $${offers[i.id].toLocaleString('es-AR')}` : ''
-                      return `- ${i.title} (${i.size || 'Talle unico'}) - $${fp.toLocaleString('es-AR')}${offer}`
-                    })
-                    .join('\n')
-                  const text = encodeURIComponent(
-                    `Hola! Me interesan estas prendas de SUELTA:\n\n${message}\n\nTotal: $${total.toLocaleString('es-AR')}`
-                  )
-                  const number = whatsappNumber || "5491112345678" // fallback
-                  window.open(`https://wa.me/${number}?text=${text}`, '_blank')
-                }}
               >
-                <ShoppingBag className="h-4 w-4" />
-                Consultar por WhatsApp
+                <a
+                  href={`https://wa.me/${formatWhatsAppNumber(whatsappNumber || "5491162239598")}?text=${text}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ShoppingBag className="h-4 w-4" />
+                  Consultar por WhatsApp
+                </a>
               </Button>
             </SheetFooter>
           </>
