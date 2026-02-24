@@ -73,12 +73,15 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
 
   const [showViewer, setShowViewer] = useState(false)
   const [scale, setScale] = useState(1)
-  const [baseScale, setBaseScale] = useState(1)
-  const imageRef = useRef<HTMLDivElement>(null)
+
+  // Ref for manual pinch tracking
+  const pinchStartDist = useRef<number | null>(null)
+  const baseScale = useRef(1)
 
   useEffect(() => {
     if (!showViewer) {
       setScale(1)
+      pinchStartDist.current = null
     }
   }, [showViewer])
 
@@ -87,6 +90,35 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
     const delta = e.deltaY * -0.001
     const newScale = Math.min(Math.max(1, scale + delta), 4)
     setScale(newScale)
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!showViewer) return
+    if (e.touches.length === 2) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      )
+      pinchStartDist.current = dist
+      baseScale.current = scale
+    }
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!showViewer || !pinchStartDist.current || e.touches.length !== 2) return
+    const dist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    )
+    const ratio = dist / pinchStartDist.current
+    const newScale = Math.min(Math.max(1, baseScale.current * ratio), 4)
+    setScale(newScale)
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (e.touches.length < 2) {
+      pinchStartDist.current = null
+    }
   }
 
   return (
@@ -105,9 +137,9 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
       >
         <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
           {/* Image */}
-          <div
+          <motion.div
             className="relative h-[75%] w-full overflow-hidden cursor-zoom-in group"
-            onClick={() => setShowViewer(true)}
+            onTap={() => setShowViewer(true)}
           >
             <img
               src={garment.image_url}
@@ -155,7 +187,7 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
                 </span>
               </div>
             )}
-          </div>
+          </motion.div>
           {/* Info */}
           <div className="flex h-[25%] flex-col justify-between p-5">
             <div>
@@ -218,6 +250,10 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] flex flex-col bg-black/95 backdrop-blur-sm touch-none"
             onWheel={handleWheel}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
           >
             <div className="flex h-16 items-center justify-between px-6 pt-4">
               <h4 className="font-serif text-xl text-white truncate max-w-[70%]">{garment.title}</h4>
@@ -234,15 +270,8 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
                 drag={scale > 1}
                 dragConstraints={{ left: -300 * scale, right: 300 * scale, top: -400 * scale, bottom: 400 * scale }}
                 dragElastic={0.1}
-                onPinchStart={() => {
-                  setBaseScale(scale)
-                }}
-                onPinch={(event, info) => {
-                  const newScale = Math.min(Math.max(1, baseScale * info.scale), 4)
-                  setScale(newScale)
-                }}
                 style={{ scale }}
-                className="w-full max-w-2xl aspect-[3/4] relative"
+                className="w-full max-w-2xl aspect-[3/4] relative touch-none pointer-events-auto"
               >
                 <img
                   src={garment.image_url}
