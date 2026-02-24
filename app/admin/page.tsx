@@ -614,21 +614,61 @@ export default function AdminDashboard() {
             <div className="flex flex-col gap-4 py-2">
               {/* Image upload */}
               <div className="flex flex-col gap-2">
-                <Label className="text-foreground">Foto de la prenda</Label>
-                {form.image_url ? (
-                  <div className="relative h-48 w-full overflow-hidden rounded-xl border border-border">
-                    <img
-                      src={form.image_url}
-                      alt="Preview"
-                      className="h-full w-full object-cover"
-                    />
+                <Label className="text-foreground">Fotos de la prenda (puedes subir varias)</Label>
+
+                {form.image_urls && form.image_urls.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {/* Uploaded Images Grid */}
+                    {form.image_urls.map((url, index) => (
+                      <div key={url} className="relative aspect-square w-full overflow-hidden rounded-xl border border-border">
+                        <img
+                          src={url}
+                          alt={`Foto ${index + 1}`}
+                          className="h-full w-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setForm((prev) => {
+                            const newUrls = prev.image_urls?.filter((_, i) => i !== index) || []
+                            return {
+                              ...prev,
+                              image_urls: newUrls,
+                              image_url: newUrls.length > 0 ? newUrls[0] : ""
+                            }
+                          })}
+                          className="absolute top-2 right-2 rounded-full bg-foreground/80 p-1.5 text-background transition-colors hover:bg-foreground"
+                          aria-label="Quitar imagen"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* Add More Button */}
                     <button
                       type="button"
-                      onClick={() => setForm((prev) => ({ ...prev, image_url: "" }))}
-                      className="absolute top-2 right-2 rounded-full bg-foreground/80 p-1.5 text-background transition-colors hover:bg-foreground"
-                      aria-label="Quitar imagen"
+                      onClick={() => fileRef.current?.click()}
+                      disabled={uploading}
+                      className="flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-muted/50 text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted"
                     >
-                      <X className="h-3.5 w-3.5" />
+                      {uploading ? (
+                        <>
+                          <Loader2 className="h-6 w-6 animate-spin text-primary/60" />
+                          <span className="text-xs">Subiendo...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-6 w-6 text-muted-foreground/60" />
+                          <span className="text-xs font-medium">Agregar</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        ref={fileRef}
+                        onChange={handleImageSelect}
+                        accept="image/*"
+                        className="hidden"
+                      />
                     </button>
                   </div>
                 ) : (
@@ -647,7 +687,7 @@ export default function AdminDashboard() {
                       <>
                         <Upload className="h-8 w-8 text-muted-foreground/60" />
                         <div className="flex flex-col items-center">
-                          <span className="text-sm font-medium text-foreground/80">Subir foto</span>
+                          <span className="text-sm font-medium text-foreground/80">Subir primera foto</span>
                           <span className="text-[10px] text-muted-foreground">Puedes recortar y hacer zoom</span>
                         </div>
                       </>

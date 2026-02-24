@@ -10,7 +10,7 @@ import {
   AnimatePresence,
   useSpring,
 } from "framer-motion"
-import { Heart, X, Tag, Ruler, Sparkles, DollarSign, Maximize2 } from "lucide-react"
+import { Heart, X, Tag, Ruler, Sparkles, DollarSign, Maximize2, ChevronLeft, ChevronRight } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import type { Garment } from "@/lib/types"
 
@@ -72,7 +72,11 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
   }
 
   const [showViewer, setShowViewer] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [scale, setScale] = useState(1)
+
+  const allImages = garment.image_urls?.length ? garment.image_urls : [garment.image_url]
+  const hasMultipleImages = allImages.length > 1
 
   // Ref for manual pinch tracking
   const pinchStartDist = useRef<number | null>(null)
@@ -81,9 +85,26 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
   useEffect(() => {
     if (!showViewer) {
       setScale(1)
+      setCurrentImageIndex(0)
       pinchStartDist.current = null
     }
   }, [showViewer])
+
+  const nextImage = (e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    if (currentImageIndex < allImages.length - 1) {
+      setScale(1)
+      setCurrentImageIndex(prev => prev + 1)
+    }
+  }
+
+  const prevImage = (e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    if (currentImageIndex > 0) {
+      setScale(1)
+      setCurrentImageIndex(prev => prev - 1)
+    }
+  }
 
   const handleWheel = (e: React.WheelEvent) => {
     if (!showViewer) return
@@ -266,7 +287,21 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
             </div>
 
             <div className="flex-1 relative overflow-hidden flex items-center justify-center p-4">
+              {hasMultipleImages && currentImageIndex > 0 && (
+                <button
+                  onClick={prevImage}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md hover:bg-black/70 active:scale-90 transition-all"
+                >
+                  <ChevronLeft className="h-8 w-8" />
+                </button>
+              )}
+
               <motion.div
+                key={currentImageIndex}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
                 drag={scale > 1}
                 dragConstraints={{ left: -300 * scale, right: 300 * scale, top: -400 * scale, bottom: 400 * scale }}
                 dragElastic={0.1}
@@ -274,17 +309,36 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
                 className="w-full max-w-2xl aspect-[3/4] relative touch-none pointer-events-auto"
               >
                 <img
-                  src={garment.image_url}
-                  alt={garment.title}
+                  src={allImages[currentImageIndex]}
+                  alt={`${garment.title} - Imagen ${currentImageIndex + 1}`}
                   className="h-full w-full object-contain drop-shadow-2xl"
                   draggable={false}
                 />
               </motion.div>
+
+              {hasMultipleImages && currentImageIndex < allImages.length - 1 && (
+                <button
+                  onClick={nextImage}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md hover:bg-black/70 active:scale-90 transition-all"
+                >
+                  <ChevronRight className="h-8 w-8" />
+                </button>
+              )}
             </div>
 
-            <div className="p-8 text-center bg-gradient-to-t from-black/60 to-transparent">
+            <div className="p-8 pb-12 text-center bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col items-center gap-4">
+              {hasMultipleImages && (
+                <div className="flex justify-center gap-2 mb-2">
+                  {allImages.map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-2 rounded-full transition-all duration-300 ${i === currentImageIndex ? 'w-8 bg-white' : 'w-2 bg-white/30'}`}
+                    />
+                  ))}
+                </div>
+              )}
               <p className="text-white/60 text-sm">
-                Usa la rueda del mouse o pincha para hacer zoom • Arrastra para explorar
+                {hasMultipleImages ? "Usa las flechas para ver más fotos • " : ""}Pincha para hacer zoom
               </p>
             </div>
           </motion.div>

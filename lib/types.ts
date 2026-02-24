@@ -9,6 +9,7 @@ export interface Garment {
   condition: string
   tags: string[]
   image_url: string
+  image_urls?: string[]
   is_active: boolean
   allows_offer: boolean
   is_sold: boolean
@@ -27,5 +28,6 @@ export interface GarmentFormData {
   condition: string
   tags: string[]
   image_url: string
+  image_urls?: string[]
   allows_offer: boolean
 }
