@@ -942,91 +942,88 @@ export default function AdminDashboard() {
                 : garment.price
               return (
                 <div key={garment.id}>
-                  <div className="flex items-center gap-3 px-4 py-3">
-                    {/* Thumbnail */}
-                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-border">
-                      <img
-                        src={garment.image_url}
-                        alt={garment.title}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                    {/* Details */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-medium text-sm text-foreground truncate">{garment.title}</h3>
-                        {!garment.is_active && (
-                          <Badge variant="outline" className="text-xs border-muted-foreground text-muted-foreground shrink-0">
-                            Oculta
-                          </Badge>
-                        )}
-                        {garment.is_sold && (
-                          <Badge className="text-xs bg-primary text-primary-foreground shrink-0 border-0">
-                            Vendido
-                          </Badge>
-                        )}
-                        {garment.allows_offer && (
-                          <Badge variant="secondary" className="text-xs bg-accent/20 text-accent-foreground shrink-0 border-0">
-                            Oferta
-                          </Badge>
-                        )}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-4 sm:py-3">
+                    <div className="flex flex-1 items-start gap-3 min-w-0">
+                      {/* Thumbnail */}
+                      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-border">
+                        <img
+                          src={garment.image_url}
+                          alt={garment.title}
+                          className="h-full w-full object-cover"
+                        />
                       </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-sm font-bold text-primary">
-                          ${finalPrice.toLocaleString("es-AR")}
-                        </span>
-                        {garment.discount_percent > 0 && (
-                          <Badge className="bg-primary/10 text-primary text-xs border-0">
-                            -{garment.discount_percent}%
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        {garment.size && (
-                          <span className="text-xs text-muted-foreground">{garment.size}</span>
-                        )}
-                        {garment.brand && (
-                          <>
-                            <span className="text-xs text-muted-foreground">{'|'}</span>
-                            <span className="text-xs text-muted-foreground">{garment.brand}</span>
-                          </>
-                        )}
+                      {/* Details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium text-sm text-foreground truncate">{garment.title}</h3>
+                          {!garment.is_active && (
+                            <Badge variant="outline" className="text-xs border-muted-foreground text-muted-foreground shrink-0">
+                              Oculta
+                            </Badge>
+                          )}
+                          {garment.is_sold && (
+                            <Badge className="text-xs bg-primary text-primary-foreground shrink-0 border-0">
+                              Vendido
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-sm font-bold text-primary">
+                            ${finalPrice.toLocaleString("es-AR")}
+                          </span>
+                          {garment.discount_percent > 0 && (
+                            <Badge className="bg-primary/10 text-primary text-xs border-0">
+                              -{garment.discount_percent}%
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          {garment.size && (
+                            <span className="text-xs text-muted-foreground">{garment.size}</span>
+                          )}
+                          {garment.brand && (
+                            <>
+                              <span className="text-xs text-muted-foreground">{'|'}</span>
+                              <span className="text-xs text-muted-foreground">{garment.brand}</span>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                     {/* Actions */}
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center justify-end gap-1 shrink-0 pt-2 sm:pt-0 border-t sm:border-0 border-border/50">
                       <button
                         type="button"
                         onClick={() => handleToggleSold(garment)}
-                        className={`rounded-lg p-2 transition-colors ${garment.is_sold ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-secondary"}`}
+                        className={`rounded-lg p-2.5 sm:p-2 transition-colors ${garment.is_sold ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-secondary"}`}
                         aria-label={garment.is_sold ? "Marcar como disponible" : "Marcar como vendido"}
                         title={garment.is_sold ? "Marcar como disponible" : "Marcar como vendido"}
                       >
-                        <CheckCircle2 className="h-4 w-4" />
+                        <CheckCircle2 className="h-4.5 w-4.5 sm:h-4 sm:w-4" />
                       </button>
                       <button
                         type="button"
                         onClick={() => handleToggleActive(garment)}
-                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary"
+                        className="rounded-lg p-2.5 sm:p-2 text-muted-foreground transition-colors hover:bg-secondary"
                         aria-label={garment.is_active ? "Ocultar prenda" : "Mostrar prenda"}
                       >
-                        {garment.is_active ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                        {garment.is_active ? <Eye className="h-4.5 w-4.5 sm:h-4 sm:w-4" /> : <EyeOff className="h-4.5 w-4.5 sm:h-4 sm:w-4" />}
                       </button>
                       <button
                         type="button"
                         onClick={() => openEditDialog(garment)}
-                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary"
+                        className="rounded-lg p-2.5 sm:p-2 text-muted-foreground transition-colors hover:bg-secondary"
                         aria-label="Editar prenda"
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="h-4.5 w-4.5 sm:h-4 sm:w-4" />
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDelete(garment.id)}
-                        className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                        className="rounded-lg p-2.5 sm:p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                         aria-label="Eliminar prenda"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-4.5 w-4.5 sm:h-4 sm:w-4" />
                       </button>
                     </div>
                   </div>
