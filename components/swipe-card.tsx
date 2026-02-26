@@ -306,12 +306,12 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
                 dragConstraints={{ left: -300 * scale, right: 300 * scale, top: -400 * scale, bottom: 400 * scale }}
                 dragElastic={0.1}
                 style={{ scale }}
-                className="w-full max-w-2xl aspect-[3/4] relative touch-none pointer-events-auto"
+                className="w-full h-full relative touch-none pointer-events-auto flex items-center justify-center p-2 sm:p-4"
               >
                 <img
                   src={allImages[currentImageIndex]}
                   alt={`${garment.title} - Imagen ${currentImageIndex + 1}`}
-                  className="h-full w-full object-contain drop-shadow-2xl"
+                  className="max-w-full max-h-full w-auto h-auto object-contain drop-shadow-2xl"
                   draggable={false}
                 />
                 {/* Watermark in Viewer */}
@@ -339,20 +339,17 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
               )}
             </div>
 
-            <div className="p-8 pb-12 text-center bg-gradient-to-t from-black/80 via-black/40 to-transparent flex flex-col items-center gap-4">
+            <div className="p-6 pb-10 text-center bg-gradient-to-t from-black/60 to-transparent flex flex-col items-center">
               {hasMultipleImages && (
                 <div className="flex justify-center gap-2 mb-2">
                   {allImages.map((_, i) => (
                     <div
                       key={i}
-                      className={`h-2 rounded-full transition-all duration-300 ${i === currentImageIndex ? 'w-8 bg-white' : 'w-2 bg-white/30'}`}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${i === currentImageIndex ? 'w-6 bg-white' : 'w-1.5 bg-white/30'}`}
                     />
                   ))}
                 </div>
               )}
-              <p className="text-white/60 text-sm">
-                {hasMultipleImages ? "Usa las flechas para ver más fotos • " : ""}Pincha para hacer zoom
-              </p>
             </div>
           </motion.div>
         )}

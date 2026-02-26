@@ -80,6 +80,7 @@ export default function AdminDashboard() {
   })
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingImageUrlIndex, setEditingImageUrlIndex] = useState<number | null>(null)
   const [form, setForm] = useState<GarmentFormData>(emptyForm)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -157,14 +158,20 @@ export default function AdminDashboard() {
         console.log('Upload successful:', data.url)
         if (cropTarget === 'garment') {
           setForm((prev) => {
-            const newUrls = [...(prev.image_urls || []), data.url]
+            let newUrls = [...(prev.image_urls || [])]
+            if (editingImageUrlIndex !== null) {
+              newUrls[editingImageUrlIndex] = data.url
+            } else {
+              newUrls.push(data.url)
+            }
             return {
               ...prev,
               image_urls: newUrls,
               image_url: newUrls[0] || data.url
             }
           })
-          toast.success("Imagen de prenda subida")
+          setEditingImageUrlIndex(null)
+          toast.success("Imagen de prenda guardada")
         } else if (cropTarget === 'logo') {
           setLogoUrl(data.url)
           toast.success("Logo subido")
@@ -641,21 +648,37 @@ export default function AdminDashboard() {
                           alt={`Foto ${index + 1}`}
                           className="h-full w-full object-cover"
                         />
-                        <button
-                          type="button"
-                          onClick={() => setForm((prev) => {
-                            const newUrls = prev.image_urls?.filter((_, i) => i !== index) || []
-                            return {
-                              ...prev,
-                              image_urls: newUrls,
-                              image_url: newUrls.length > 0 ? newUrls[0] : ""
-                            }
-                          })}
-                          className="absolute top-2 right-2 rounded-full bg-foreground/80 p-1.5 text-background transition-colors hover:bg-foreground"
-                          aria-label="Quitar imagen"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
+                        <div className="absolute top-2 right-2 flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCropTarget('garment')
+                              setEditingImageUrlIndex(index)
+                              setOriginalFileName(`edit-image-${index}.jpg`)
+                              setOriginalMimeType('image/jpeg')
+                              setImageToCrop(url)
+                            }}
+                            className="rounded-full bg-foreground/80 p-1.5 text-background transition-colors hover:bg-foreground"
+                            aria-label="Editar imagen"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setForm((prev) => {
+                              const newUrls = prev.image_urls?.filter((_, i) => i !== index) || []
+                              return {
+                                ...prev,
+                                image_urls: newUrls,
+                                image_url: newUrls.length > 0 ? newUrls[0] : ""
+                              }
+                            })}
+                            className="rounded-full bg-foreground/80 p-1.5 text-background transition-colors hover:bg-foreground"
+                            aria-label="Quitar imagen"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
                       </div>
                     ))}
 
