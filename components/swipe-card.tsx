@@ -367,6 +367,26 @@ interface SwipeStackProps {
 export function SwipeStack({ garments, onLike, onPass }: SwipeStackProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [exitDirection, setExitDirection] = useState<"left" | "right" | null>(null)
+  const [showCatalog, setShowCatalog] = useState(false)
+  const [selectedGarment, setSelectedGarment] = useState<Garment | null>(null)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+
+  const { data: settings } = useSWR("/api/admin/settings", fetcher)
+  const watermarkUrl = settings?.watermark_url
+  const watermarkSize = settings?.watermark_size ? Number(settings.watermark_size) : 30
+  const watermarkOpacity = settings?.watermark_opacity ? Number(settings.watermark_opacity) : 0.5
+  const watermarkPosition = settings?.watermark_position || "center"
+
+  const getWatermarkPositionClasses = () => {
+    switch (watermarkPosition) {
+      case 'top-left': return 'top-4 left-4'
+      case 'top-right': return 'top-4 right-4'
+      case 'bottom-left': return 'bottom-4 left-4'
+      case 'bottom-right': return 'bottom-4 right-4'
+      case 'center':
+      default: return 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'
+    }
+  }
 
   const currentGarment = garments[currentIndex]
   const nextGarment = garments[currentIndex + 1]
@@ -388,18 +408,229 @@ export function SwipeStack({ garments, onLike, onPass }: SwipeStackProps) {
     [currentGarment, onLike, onPass]
   )
 
-  if (currentIndex >= garments.length) {
+  if (currentIndex >= garments.length && !showCatalog) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center">
+      <div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center animate-in fade-in zoom-in duration-500">
         <div className="rounded-full bg-secondary p-6">
           <Sparkles className="h-10 w-10 text-primary" />
         </div>
         <h3 className="font-serif text-2xl font-semibold text-foreground">
-          Ya viste todas las prendas
+          ¡Eso es todo por ahora!
         </h3>
-        <p className="text-muted-foreground">
-          Volve pronto, siempre estamos sumando prendas nuevas.
+        <p className="max-w-xs text-muted-foreground">
+          Has recorrido todas las prendas destacadas. ¿Quieres ver el catálogo completo?
         </p>
+        <button
+          onClick={() => setShowCatalog(true)}
+          className="mt-4 rounded-full bg-primary px-8 py-3 text-sm font-bold text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95"
+        >
+          VER CATÁLOGO
+        </button>
+      </div>
+    )
+  }
+
+  if (showCatalog) {
+    return (
+      <div className="h-full w-full overflow-y-auto px-4 py-6 pb-20 scrollbar-hide">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="font-serif text-2xl font-bold text-foreground">Catálogo completo</h2>
+          <button
+            onClick={() => setShowCatalog(false)}
+            className="text-xs font-bold text-muted-foreground uppercase tracking-widest hover:text-foreground transition-colors"
+          >
+            ← Volver
+          </button>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          {garments.map((garment) => (
+            <motion.div
+              layoutId={garment.id}
+              key={garment.id}
+              onClick={() => {
+                setSelectedGarment(garment)
+                setCurrentImageIndex(0)
+              }}
+              className="flex flex-col bg-card rounded-xl overflow-hidden border border-border shadow-sm active:scale-[0.98] transition-all cursor-pointer group"
+            >
+              <div className="aspect-[3/4] relative overflow-hidden bg-muted">
+                <img
+                  src={garment.image_url}
+                  alt={garment.title}
+                  className="h-full w-full object-cover transition-transform group-hover:scale-110 duration-500"
+                />
+                {garment.is_sold && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                    <span className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-1 rounded uppercase tracking-tighter">Vendido</span>
+                  </div>
+                )}
+                {garment.discount_percent > 0 && !garment.is_sold && (
+                  <div className="absolute top-2 right-2 bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded">
+                    -{garment.discount_percent}%
+                  </div>
+                )}
+              </div>
+              <div className="p-3">
+                <h4 className="text-xs font-medium text-foreground truncate">{garment.title}</h4>
+                <div className="flex items-center justify-between mt-1">
+                  <span className="text-sm font-bold text-primary">
+                    ${(garment.discount_percent > 0 ? garment.price * (1 - garment.discount_percent / 100) : garment.price).toLocaleString('es-AR')}
+                  </span>
+                  {garment.size && (
+                    <span className="text-[10px] text-muted-foreground">{garment.size}</span>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Product Detail Modal */}
+        <AnimatePresence>
+          {selectedGarment && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setSelectedGarment(null)
+              }}
+            >
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                className="bg-card w-full max-w-lg rounded-t-3xl sm:rounded-3xl overflow-hidden max-h-[90dvh] flex flex-col"
+              >
+                {/* Image Gallery */}
+                <div className="relative aspect-[3/4] w-full bg-muted">
+                  <div className="absolute top-4 right-4 z-20">
+                    <button
+                      onClick={() => setSelectedGarment(null)}
+                      className="h-10 w-10 rounded-full bg-black/20 backdrop-blur-md text-white flex items-center justify-center active:scale-90 transition-all hover:bg-black/40"
+                    >
+                      <X className="h-6 w-6" />
+                    </button>
+                  </div>
+
+                  <div className="h-full w-full relative">
+                    {/* Navigation */}
+                    {(selectedGarment.image_urls?.length || 1) > 1 && (
+                      <>
+                        <button
+                          onClick={() => setCurrentImageIndex(prev => Math.max(0, prev - 1))}
+                          disabled={currentImageIndex === 0}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white disabled:opacity-0"
+                        >
+                          <ChevronLeft className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={() => setCurrentImageIndex(prev => Math.min((selectedGarment.image_urls?.length || 1) - 1, prev + 1))}
+                          disabled={currentImageIndex === (selectedGarment.image_urls?.length || 1) - 1}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white disabled:opacity-0"
+                        >
+                          <ChevronRight className="h-5 w-5" />
+                        </button>
+                      </>
+                    )}
+
+                    <img
+                      src={selectedGarment.image_urls?.[currentImageIndex] || selectedGarment.image_url}
+                      alt={selectedGarment.title}
+                      className="h-full w-full object-cover"
+                    />
+
+                    {/* Watermark in Catalog Modal */}
+                    {watermarkUrl && (
+                      <img
+                        src={watermarkUrl}
+                        alt=""
+                        className={`absolute pointer-events-none ${getWatermarkPositionClasses()}`}
+                        style={{
+                          width: `${watermarkSize}%`,
+                          opacity: watermarkOpacity,
+                          zIndex: 5
+                        }}
+                      />
+                    )}
+
+                    {/* Pagination Dots */}
+                    {(selectedGarment.image_urls?.length || 1) > 1 && (
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 px-3 py-1.5 rounded-full bg-black/10 backdrop-blur-sm">
+                        {selectedGarment.image_urls?.map((_, i) => (
+                          <div
+                            key={i}
+                            className={`h-1.5 rounded-full transition-all duration-300 ${i === currentImageIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/40'}`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Info & Action */}
+                <div className="p-6 overflow-y-auto">
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                      <h3 className="font-serif text-2xl font-bold text-foreground leading-tight text-balance">
+                        {selectedGarment.title}
+                      </h3>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {selectedGarment.size && (
+                          <Badge variant="secondary" className="px-2 py-0.5 text-[10px] bg-secondary text-secondary-foreground">
+                            Talle: {selectedGarment.size}
+                          </Badge>
+                        )}
+                        {selectedGarment.brand && (
+                          <Badge variant="secondary" className="px-2 py-0.5 text-[10px] bg-secondary text-secondary-foreground">
+                            {selectedGarment.brand}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="block text-2xl font-bold text-primary">
+                        ${(selectedGarment.discount_percent > 0 ? selectedGarment.price * (1 - selectedGarment.discount_percent / 100) : selectedGarment.price).toLocaleString('es-AR')}
+                      </span>
+                      {selectedGarment.discount_percent > 0 && (
+                        <span className="text-xs text-muted-foreground line-through">
+                          ${selectedGarment.price.toLocaleString('es-AR')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {selectedGarment.description && (
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-6 whitespace-pre-line">
+                      {selectedGarment.description}
+                    </p>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      if (!selectedGarment.is_sold) {
+                        onLike(selectedGarment)
+                        setSelectedGarment(null)
+                      }
+                    }}
+                    disabled={selectedGarment.is_sold}
+                    className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none"
+                  >
+                    {selectedGarment.is_sold ? (
+                      "VENDIDO"
+                    ) : (
+                      <>
+                        <Heart className="h-5 w-5 fill-current" />
+                        AGREGAR AL CARRITO
+                      </>
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     )
   }
