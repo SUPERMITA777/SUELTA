@@ -165,7 +165,7 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
             <img
               src={garment.image_url}
               alt={garment.title}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain bg-muted/30"
             />
             <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
               <Maximize2 className="h-8 w-8 text-white" />
@@ -602,30 +602,67 @@ export function SwipeStack({ garments, onLike, onPass }: SwipeStackProps) {
                   </div>
 
                   {selectedGarment.description && (
-                    <p className="text-sm text-muted-foreground leading-relaxed mb-6 whitespace-pre-line">
-                      {selectedGarment.description}
-                    </p>
+                    <div className="mb-6">
+                      <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2 px-1">Detalles de la prenda</h4>
+                      <p className="text-sm text-foreground leading-relaxed whitespace-pre-line bg-secondary/30 p-4 rounded-2xl">
+                        {selectedGarment.description}
+                      </p>
+                    </div>
                   )}
 
-                  <button
-                    onClick={() => {
-                      if (!selectedGarment.is_sold) {
-                        onLike(selectedGarment)
-                        setSelectedGarment(null)
-                      }
-                    }}
-                    disabled={selectedGarment.is_sold}
-                    className="w-full h-14 rounded-2xl bg-primary text-primary-foreground font-bold flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none"
-                  >
-                    {selectedGarment.is_sold ? (
-                      "VENDIDO"
-                    ) : (
-                      <>
-                        <Heart className="h-5 w-5 fill-current" />
-                        AGREGAR AL CARRITO
-                      </>
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    {selectedGarment.condition && (
+                      <div className="bg-secondary/20 p-3 rounded-xl">
+                        <span className="block text-[10px] uppercase text-muted-foreground font-bold mb-1">Estado</span>
+                        <span className="text-sm font-medium">{selectedGarment.condition}</span>
+                      </div>
                     )}
-                  </button>
+                    {selectedGarment.brand && (
+                      <div className="bg-secondary/20 p-3 rounded-xl">
+                        <span className="block text-[10px] uppercase text-muted-foreground font-bold mb-1">Marca</span>
+                        <span className="text-sm font-medium">{selectedGarment.brand}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedGarment.tags && selectedGarment.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-8">
+                      {selectedGarment.tags.map((tag, i) => (
+                        <span key={i} className="text-[10px] bg-accent/10 text-accent-foreground px-2 py-1 rounded-full border border-accent/20">
+                          #{tag.replace('#', '')}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => setSelectedGarment(null)}
+                      className="flex-1 h-14 rounded-2xl border-2 border-destructive/20 text-destructive font-bold flex items-center justify-center gap-2 hover:bg-destructive/5 active:scale-[0.98] transition-all"
+                    >
+                      <X className="h-5 w-5" />
+                      PASO
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!selectedGarment.is_sold) {
+                          onLike(selectedGarment)
+                          setSelectedGarment(null)
+                        }
+                      }}
+                      disabled={selectedGarment.is_sold}
+                      className="flex-[2] h-14 rounded-2xl bg-primary text-primary-foreground font-bold flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:grayscale disabled:pointer-events-none shadow-lg shadow-primary/20"
+                    >
+                      {selectedGarment.is_sold ? (
+                        "VENDIDO"
+                      ) : (
+                        <>
+                          <Heart className="h-5 w-5 fill-current" />
+                          ME GUSTA
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             </motion.div>

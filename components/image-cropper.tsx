@@ -138,7 +138,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
                         onCropChange={onCropChange}
                         onCropComplete={onCropCompleteInternal}
                         onZoomChange={onZoomChange}
-                        minZoom={0.5}
+                        minZoom={0.1}
                     />
                 </div>
 
@@ -175,7 +175,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
                     <span className="text-sm font-medium">Zoom</span>
                     <Slider
                         value={[zoom]}
-                        min={0.5}
+                        min={0.1}
                         max={3}
                         step={0.1}
                         onValueChange={(value) => setZoom(value[0])}
