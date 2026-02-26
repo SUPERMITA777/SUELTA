@@ -314,6 +314,19 @@ export function SwipeCard({ garment, onSwipeLeft, onSwipeRight, isTop, custom }:
                   className="h-full w-full object-contain drop-shadow-2xl"
                   draggable={false}
                 />
+                {/* Watermark in Viewer */}
+                {watermarkUrl && (
+                  <img
+                    src={watermarkUrl}
+                    alt=""
+                    className={`absolute pointer-events-none ${getWatermarkPositionClasses()}`}
+                    style={{
+                      width: `${watermarkSize}%`,
+                      opacity: watermarkOpacity,
+                      zIndex: 1
+                    }}
+                  />
+                )}
               </motion.div>
 
               {hasMultipleImages && currentImageIndex < allImages.length - 1 && (
