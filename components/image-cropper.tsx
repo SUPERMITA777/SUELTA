@@ -139,6 +139,7 @@ export const ImageCropper: React.FC<ImageCropperProps> = ({
                         onCropComplete={onCropCompleteInternal}
                         onZoomChange={onZoomChange}
                         minZoom={0.1}
+                        restrictPosition={false}
                     />
                 </div>
 
