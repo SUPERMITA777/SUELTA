@@ -103,15 +103,15 @@ export default function AdminDashboard() {
   const [originalMimeType, setOriginalMimeType] = useState("image/jpeg")
 
   // Fetch settings
-  useSWR("/api/admin/settings", fetcher, {
+  const { isLoading: loadingSettings } = useSWR("/api/admin/settings", fetcher, {
     onSuccess: (data) => {
-      if (data.whatsapp_number) setWhatsappNumber(data.whatsapp_number)
-      if (data.logo_url) setLogoUrl(data.logo_url)
-      if (data.logo_size) setLogoSize(Number(data.logo_size))
-      if (data.watermark_url) setWatermarkUrl(data.watermark_url)
-      if (data.watermark_size) setWatermarkSize(Number(data.watermark_size))
-      if (data.watermark_opacity) setWatermarkOpacity(Number(data.watermark_opacity))
-      if (data.watermark_position) setWatermarkPosition(data.watermark_position)
+      if (data.whatsapp_number !== undefined) setWhatsappNumber(data.whatsapp_number || "")
+      if (data.logo_url !== undefined) setLogoUrl(data.logo_url || "")
+      if (data.logo_size !== undefined) setLogoSize(Number(data.logo_size) || 100)
+      if (data.watermark_url !== undefined) setWatermarkUrl(data.watermark_url || "")
+      if (data.watermark_size !== undefined) setWatermarkSize(Number(data.watermark_size) || 30)
+      if (data.watermark_opacity !== undefined) setWatermarkOpacity(Number(data.watermark_opacity) || 0.5)
+      if (data.watermark_position !== undefined) setWatermarkPosition(data.watermark_position || "center")
     }
   })
 
@@ -299,11 +299,14 @@ export default function AdminDashboard() {
     ]
 
     for (const setting of settingsToSave) {
-      await fetch("/api/admin/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(setting),
-      })
+      // Only save if it's not the initial empty state and we have a key
+      if (setting.key) {
+        await fetch("/api/admin/settings", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(setting),
+        })
+      }
     }
 
     mutate("/api/admin/settings")
@@ -558,8 +561,9 @@ export default function AdminDashboard() {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleSaveSettings} className="w-full">
-              Guardar cambios
+            <Button onClick={handleSaveSettings} className="w-full" disabled={loadingSettings}>
+              {loadingSettings ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {loadingSettings ? "Cargando..." : "Guardar cambios"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1014,40 +1018,51 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     {/* Actions */}
-                    <div className="flex items-center justify-end gap-1 shrink-0 pt-2 sm:pt-0 border-t sm:border-0 border-border/50">
-                      <button
-                        type="button"
-                        onClick={() => handleToggleSold(garment)}
-                        className={`rounded-lg p-2.5 sm:p-2 transition-colors ${garment.is_sold ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-secondary"}`}
-                        aria-label={garment.is_sold ? "Marcar como disponible" : "Marcar como vendido"}
-                        title={garment.is_sold ? "Marcar como disponible" : "Marcar como vendido"}
-                      >
-                        <CheckCircle2 className="h-4.5 w-4.5 sm:h-4 sm:w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleToggleActive(garment)}
-                        className="rounded-lg p-2.5 sm:p-2 text-muted-foreground transition-colors hover:bg-secondary"
-                        aria-label={garment.is_active ? "Ocultar prenda" : "Mostrar prenda"}
-                      >
-                        {garment.is_active ? <Eye className="h-4.5 w-4.5 sm:h-4 sm:w-4" /> : <EyeOff className="h-4.5 w-4.5 sm:h-4 sm:w-4" />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openEditDialog(garment)}
-                        className="rounded-lg p-2.5 sm:p-2 text-muted-foreground transition-colors hover:bg-secondary"
-                        aria-label="Editar prenda"
-                      >
-                        <Pencil className="h-4.5 w-4.5 sm:h-4 sm:w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(garment.id)}
-                        className="rounded-lg p-2.5 sm:p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                        aria-label="Eliminar prenda"
-                      >
-                        <Trash2 className="h-4.5 w-4.5 sm:h-4 sm:w-4" />
-                      </button>
+                    <div className="flex items-center justify-between sm:justify-end gap-1.5 shrink-0 pt-3 sm:pt-0 border-t sm:border-0 border-border/50 mt-2 sm:mt-0 w-full sm:w-auto">
+                      <div className="flex items-center gap-1.5 sm:gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleSold(garment)}
+                          className={`flex items-center gap-2 rounded-lg p-2.5 sm:p-2 transition-colors ${garment.is_sold ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-secondary"}`}
+                          aria-label={garment.is_sold ? "Marcar como disponible" : "Marcar como vendido"}
+                          title={garment.is_sold ? "Marcar como disponible" : "Marcar como vendido"}
+                        >
+                          <CheckCircle2 className="h-5 w-5 sm:h-4 sm:w-4" />
+                          <span className="text-xs font-medium sm:hidden">{garment.is_sold ? "Vendido" : "Vender"}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleActive(garment)}
+                          className="flex items-center gap-2 rounded-lg p-2.5 sm:p-2 text-muted-foreground transition-colors hover:bg-secondary"
+                          aria-label={garment.is_active ? "Ocultar prenda" : "Mostrar prenda"}
+                          title={garment.is_active ? "Ocultar prenda" : "Mostrar prenda"}
+                        >
+                          {garment.is_active ? <Eye className="h-5 w-5 sm:h-4 sm:w-4" /> : <EyeOff className="h-5 w-5 sm:h-4 sm:w-4" />}
+                          <span className="text-xs font-medium sm:hidden">{garment.is_active ? "Visible" : "Oculta"}</span>
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-1.5 sm:gap-1">
+                        <button
+                          type="button"
+                          onClick={() => openEditDialog(garment)}
+                          className="flex items-center gap-2 rounded-lg p-2.5 sm:p-2 text-muted-foreground transition-colors hover:bg-secondary"
+                          aria-label="Editar prenda"
+                          title="Editar prenda"
+                        >
+                          <Pencil className="h-5 w-5 sm:h-4 sm:w-4" />
+                          <span className="text-xs font-medium sm:hidden">Editar</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(garment.id)}
+                          className="flex items-center gap-2 rounded-lg p-2.5 sm:p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                          aria-label="Eliminar prenda"
+                          title="Eliminar prenda"
+                        >
+                          <Trash2 className="h-5 w-5 sm:h-4 sm:w-4" />
+                          <span className="text-xs font-medium sm:hidden">Eliminar</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <Separator className="bg-border" />
