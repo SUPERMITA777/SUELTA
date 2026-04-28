@@ -2,7 +2,7 @@
 
 import { ShoppingCart, X, Trash2, ShoppingBag, Ruler, Tag, DollarSign, Sparkles } from "lucide-react"
 import confetti from "canvas-confetti"
-import { useEffect, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
