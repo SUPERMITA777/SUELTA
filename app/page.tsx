@@ -60,6 +60,8 @@ export default function StorePage() {
             onRemove={handleRemoveFromCart}
             count={liked.length}
             whatsappNumber={settings?.whatsapp_number}
+            discountThreshold={Number(settings?.discount_threshold || 30000)}
+            discountPercentage={Number(settings?.discount_percentage || 10)}
           />
         </div>
       </header>

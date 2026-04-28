@@ -99,6 +99,8 @@ export default function AdminDashboard() {
   const [watermarkSize, setWatermarkSize] = useState(30)
   const [watermarkOpacity, setWatermarkOpacity] = useState(0.5)
   const [watermarkPosition, setWatermarkPosition] = useState("center")
+  const [discountThreshold, setDiscountThreshold] = useState(30000)
+  const [discountPercentage, setDiscountPercentage] = useState(10)
   const [cropTarget, setCropTarget] = useState<'garment' | 'logo' | 'watermark'>('garment')
   const [originalMimeType, setOriginalMimeType] = useState("image/jpeg")
 
@@ -110,8 +112,10 @@ export default function AdminDashboard() {
       if (data.logo_size !== undefined) setLogoSize(Number(data.logo_size) || 100)
       if (data.watermark_url !== undefined) setWatermarkUrl(data.watermark_url || "")
       if (data.watermark_size !== undefined) setWatermarkSize(Number(data.watermark_size) || 30)
-      if (data.watermark_opacity !== undefined) setWatermarkOpacity(Number(data.watermark_opacity) || 0.5)
+      if (data.watermark_opacity !== undefined) setWatermarkOpacity(Number(data.watermark_opacity || 0.5))
       if (data.watermark_position !== undefined) setWatermarkPosition(data.watermark_position || "center")
+      if (data.discount_threshold !== undefined) setDiscountThreshold(Number(data.discount_threshold || 30000))
+      if (data.discount_percentage !== undefined) setDiscountPercentage(Number(data.discount_percentage || 10))
     }
   })
 
@@ -296,6 +300,8 @@ export default function AdminDashboard() {
       { key: "watermark_size", value: watermarkSize.toString() },
       { key: "watermark_opacity", value: watermarkOpacity.toString() },
       { key: "watermark_position", value: watermarkPosition },
+      { key: 'discount_threshold', value: discountThreshold.toString() },
+      { key: 'discount_percentage', value: discountPercentage.toString() }
     ]
 
     for (const setting of settingsToSave) {
@@ -558,6 +564,40 @@ export default function AdminDashboard() {
                   </div>
                 </>
               )}
+
+              <Separator className="my-2" />
+              
+              <div className="flex flex-col gap-4">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <Tag className="h-4 w-4" /> Configuración de Descuento
+                </h4>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <Label>Compra mínima ($)</Label>
+                    <Input
+                      type="number"
+                      value={discountThreshold}
+                      onChange={(e) => setDiscountThreshold(Number(e.target.value))}
+                      className="bg-background border-border"
+                      placeholder="Ej: 30000"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label>Descuento (%)</Label>
+                    <Input
+                      type="number"
+                      value={discountPercentage}
+                      onChange={(e) => setDiscountPercentage(Number(e.target.value))}
+                      className="bg-background border-border"
+                      placeholder="Ej: 10"
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground italic">
+                  * El descuento se aplicará automáticamente cuando el subtotal supere el monto indicado.
+                </p>
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -1018,12 +1058,12 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     {/* Actions */}
-                    <div className="flex items-center justify-between sm:justify-end gap-1.5 shrink-0 pt-3 sm:pt-0 border-t sm:border-0 border-border/50 mt-2 sm:mt-0 w-full sm:w-auto">
-                      <div className="flex items-center gap-1.5 sm:gap-1">
+                    <div className="flex items-center justify-center sm:justify-end gap-4 sm:gap-2 shrink-0 pt-3 sm:pt-0 border-t sm:border-0 border-border/50 mt-2 sm:mt-0 w-full sm:w-auto">
+                      <div className="flex items-center gap-2 sm:gap-1">
                         <button
                           type="button"
                           onClick={() => handleToggleSold(garment)}
-                          className={`flex items-center gap-2 rounded-lg p-2.5 sm:p-2 transition-colors ${garment.is_sold ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-secondary"}`}
+                          className={`flex items-center gap-1.5 rounded-lg p-2.5 sm:p-2 transition-colors ${garment.is_sold ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-secondary"}`}
                           aria-label={garment.is_sold ? "Marcar como disponible" : "Marcar como vendido"}
                           title={garment.is_sold ? "Marcar como disponible" : "Marcar como vendido"}
                         >
@@ -1033,7 +1073,7 @@ export default function AdminDashboard() {
                         <button
                           type="button"
                           onClick={() => handleToggleActive(garment)}
-                          className="flex items-center gap-2 rounded-lg p-2.5 sm:p-2 text-muted-foreground transition-colors hover:bg-secondary"
+                          className="flex items-center gap-1.5 rounded-lg p-2.5 sm:p-2 text-muted-foreground transition-colors hover:bg-secondary"
                           aria-label={garment.is_active ? "Ocultar prenda" : "Mostrar prenda"}
                           title={garment.is_active ? "Ocultar prenda" : "Mostrar prenda"}
                         >
@@ -1041,11 +1081,11 @@ export default function AdminDashboard() {
                           <span className="text-xs font-medium sm:hidden">{garment.is_active ? "Visible" : "Oculta"}</span>
                         </button>
                       </div>
-                      <div className="flex items-center gap-1.5 sm:gap-1">
+                      <div className="flex items-center gap-2 sm:gap-1">
                         <button
                           type="button"
                           onClick={() => openEditDialog(garment)}
-                          className="flex items-center gap-2 rounded-lg p-2.5 sm:p-2 text-muted-foreground transition-colors hover:bg-secondary"
+                          className="flex items-center gap-1.5 rounded-lg p-2.5 sm:p-2 text-muted-foreground transition-colors hover:bg-secondary"
                           aria-label="Editar prenda"
                           title="Editar prenda"
                         >
@@ -1055,7 +1095,7 @@ export default function AdminDashboard() {
                         <button
                           type="button"
                           onClick={() => handleDelete(garment.id)}
-                          className="flex items-center gap-2 rounded-lg p-2.5 sm:p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                          className="flex items-center gap-1.5 rounded-lg p-2.5 sm:p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                           aria-label="Eliminar prenda"
                           title="Eliminar prenda"
                         >
