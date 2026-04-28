@@ -5,6 +5,7 @@ import useSWR from "swr"
 import { SueltaLogo } from "@/components/suelta-logo"
 import { SwipeStack } from "@/components/swipe-card"
 import { PreCart } from "@/components/pre-cart"
+import { AnnouncementModal } from "@/components/announcement-modal"
 import { Loader2, Instagram } from "lucide-react"
 import type { Garment } from "@/lib/types"
 
@@ -42,6 +43,11 @@ export default function StorePage() {
 
   return (
     <div className="flex h-dvh flex-col bg-background">
+      <AnnouncementModal 
+        imageUrl={settings?.announcement_url} 
+        active={settings?.announcement_active === "true"} 
+      />
+      
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-card/80 backdrop-blur-sm">
         <SueltaLogo />

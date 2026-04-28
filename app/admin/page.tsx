@@ -21,6 +21,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog"
+import { Switch } from "@/components/ui/switch"
 import { ImageCropper } from "@/components/image-cropper"
 import {
   Plus,
@@ -37,6 +38,7 @@ import {
   Settings,
   TrendingUp,
   CheckCircle2,
+  Megaphone,
 } from "lucide-react"
 import { toast } from "sonner"
 import type { Garment, GarmentFormData } from "@/lib/types"
@@ -101,7 +103,9 @@ export default function AdminDashboard() {
   const [watermarkPosition, setWatermarkPosition] = useState("center")
   const [discountThreshold, setDiscountThreshold] = useState(30000)
   const [discountPercentage, setDiscountPercentage] = useState(10)
-  const [cropTarget, setCropTarget] = useState<'garment' | 'logo' | 'watermark'>('garment')
+  const [announcementUrl, setAnnouncementUrl] = useState("")
+  const [announcementActive, setAnnouncementActive] = useState(false)
+  const [cropTarget, setCropTarget] = useState<'garment' | 'logo' | 'watermark' | 'announcement'>('garment')
   const [originalMimeType, setOriginalMimeType] = useState("image/jpeg")
 
   // Fetch settings
@@ -116,6 +120,8 @@ export default function AdminDashboard() {
       if (data.watermark_position !== undefined) setWatermarkPosition(data.watermark_position || "center")
       if (data.discount_threshold !== undefined) setDiscountThreshold(Number(data.discount_threshold || 30000))
       if (data.discount_percentage !== undefined) setDiscountPercentage(Number(data.discount_percentage || 10))
+      if (data.announcement_url !== undefined) setAnnouncementUrl(data.announcement_url || "")
+      if (data.announcement_active !== undefined) setAnnouncementActive(data.announcement_active === "true")
     }
   })
 
@@ -182,6 +188,9 @@ export default function AdminDashboard() {
         } else if (cropTarget === 'watermark') {
           setWatermarkUrl(data.url)
           toast.success("Marca de agua subida")
+        } else if (cropTarget === 'announcement') {
+          setAnnouncementUrl(data.url)
+          toast.success("Flyer de anuncio subido")
         }
       } else {
         toast.error("Error al subir imagen")
@@ -301,7 +310,9 @@ export default function AdminDashboard() {
       { key: "watermark_opacity", value: watermarkOpacity.toString() },
       { key: "watermark_position", value: watermarkPosition },
       { key: 'discount_threshold', value: discountThreshold.toString() },
-      { key: 'discount_percentage', value: discountPercentage.toString() }
+      { key: 'discount_percentage', value: discountPercentage.toString() },
+      { key: 'announcement_url', value: announcementUrl },
+      { key: 'announcement_active', value: announcementActive.toString() }
     ]
 
     for (const setting of settingsToSave) {
@@ -320,7 +331,7 @@ export default function AdminDashboard() {
     setSettingsOpen(false)
   }
 
-  const handleUploadSettingImage = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'watermark') => {
+  const handleUploadSettingImage = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'watermark' | 'announcement') => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -396,7 +407,7 @@ export default function AdminDashboard() {
           open={!!imageToCrop}
           onCropComplete={handleCroppedImage}
           onCancel={() => setImageToCrop(null)}
-          initialAspect={cropTarget === 'garment' ? 3 / 4 : 1}
+          initialAspect={cropTarget === 'garment' ? 3 / 4 : cropTarget === 'announcement' ? 3 / 4 : 1}
           allowDynamicAspect={cropTarget !== 'garment'}
           mimeType={originalMimeType}
         />
@@ -597,6 +608,48 @@ export default function AdminDashboard() {
                 <p className="text-[10px] text-muted-foreground italic">
                   * El descuento se aplicará automáticamente cuando el subtotal supere el monto indicado.
                 </p>
+              </div>
+
+              <Separator className="my-2" />
+
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <Megaphone className="h-4 w-4" /> Anuncio de Inicio (Flyer)
+                  </h4>
+                  <Switch
+                    checked={announcementActive}
+                    onCheckedChange={setAnnouncementActive}
+                  />
+                </div>
+
+                <div className="flex items-center gap-4 p-3 rounded-xl border border-border bg-muted/30">
+                  <div className="h-16 w-16 bg-muted rounded-lg flex items-center justify-center overflow-hidden shrink-0">
+                    {announcementUrl ? (
+                      <img src={announcementUrl} alt="Anuncio" className="h-full w-full object-cover" />
+                    ) : (
+                      <Megaphone className="h-6 w-6 text-muted-foreground/50" />
+                    )}
+                  </div>
+                  <div className="flex-1 flex flex-col gap-2">
+                    <p className="text-xs text-muted-foreground">Sube un flyer para mostrar ofertas o novedades al abrir la web.</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-fit"
+                      onClick={() => {
+                        const input = document.createElement('input')
+                        input.type = 'file'
+                        input.accept = 'image/*'
+                        input.onchange = (e) => handleUploadSettingImage(e as any, 'announcement')
+                        input.click()
+                      }}
+                      disabled={uploading}
+                    >
+                      {uploading && cropTarget === 'announcement' ? <Loader2 className="h-4 w-4 animate-spin" /> : "Subir Flyer"}
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
